@@ -1,53 +1,26 @@
 import React from 'react';
-import { 
-  View, Text, Image, TouchableOpacity, StyleSheet, 
-  ScrollView, Alert 
+import {
+  View, Text, Image, TouchableOpacity, StyleSheet,
+  ScrollView
 } from 'react-native';
-
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-import { supabase } from '../services/supabase';
+import { useNavigation } from '@react-navigation/native';
 import { COLORS } from '../config/theme';
 
-export default function HomeScreen({ navigation }) {
-  
-  const handleLogout = () => {
-    Alert.alert(
-      "Logout Confirmation",
-      "Are you sure you want to logout?",
-      [
-        { text: "Cancel", style: "cancel" },
-        { 
-          text: "Logout", 
-          style: "destructive", 
-          onPress: async () => await supabase.auth.signOut() 
-        }
-      ]
-    );
-  };
+export default function HomeScreen() {
+  const navigation = useNavigation();
 
   return (
-    // SafeAreaView ini sekarang dari library 'react-native-safe-area-context'
-    // edges={['top', 'left', 'right']} memastikan bagian bawah tidak terpotong berlebihan
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        
-        {/* === 1. NAVBAR (Header) === */}
+
+        {/* === 1. HEADER === */}
         <View style={styles.navContainer}>
-          <View style={styles.navLogo}>
-            <Image 
-              source={require('../../assets/images/logo.png')} 
-              style={styles.logoImage} 
-              resizeMode="contain" 
-            />
-          </View>
-          
-          <TouchableOpacity onPress={handleLogout}>
-            <Image 
-              source={require('../../assets/images/profile.png')} 
-              style={styles.profileIcon} 
-            />
-          </TouchableOpacity>
+          <Image
+            source={require('../../assets/images/logo.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
         </View>
 
         {/* === 2. HERO SECTION === */}
@@ -55,32 +28,32 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.heroTitle}>
             Elevate your voice, <Text style={styles.highlight}>master</Text> the art of presentation
           </Text>
-          
+
           <Text style={styles.creator}>by Savetya Dyasara</Text>
-          
+
           <Text style={styles.heroDescription}>
-            Master the art of presentation and public speaking. 
-            Savetya Dyasara helps you build confidence, sharpen your communication skills, 
+            Master the art of presentation and public speaking.
+            Savetya Dyasara helps you build confidence, sharpen your communication skills,
             and deliver impactful messages that truly connect with your audience.
           </Text>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.ctaButton}
-            onPress={() => navigation.navigate('Learn')} 
+            onPress={() => navigation.navigate('LearnTab')}
           >
             <Text style={styles.ctaButtonText}>Start Learning</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.ctaButton, { backgroundColor: COLORS.secondary, marginTop: -15 }]}
-            onPress={() => navigation.navigate('Quiz')} 
+            onPress={() => navigation.navigate('QuizTab')}
           >
             <Text style={styles.ctaButtonText}>Take a Quiz</Text>
           </TouchableOpacity>
 
-          <Image 
-            source={require('../../assets/images/home.png')} 
-            style={styles.heroImage} 
+          <Image
+            source={require('../../assets/images/home.png')}
+            style={styles.heroImage}
             resizeMode="contain"
           />
         </View>
@@ -100,39 +73,31 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.background, 
+    backgroundColor: COLORS.background,
   },
   scrollContainer: {
     flexGrow: 1,
     paddingBottom: 20,
   },
   navContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 15,
     backgroundColor: '#FFFFFF',
-    elevation: 4, 
-    shadowColor: '#000', 
+    elevation: 4,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
   logoImage: {
-    width: 120, 
-    height: 40,
-  },
-  profileIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#ddd',
+    width: 150,
+    height: 50,
   },
   heroSection: {
     padding: 20,
-    alignItems: 'center', 
+    alignItems: 'center',
   },
   heroTitle: {
     fontSize: 28,
@@ -172,11 +137,11 @@ const styles = StyleSheet.create({
   },
   heroImage: {
     width: '100%',
-    height: 250, 
+    height: 250,
     borderRadius: 15,
   },
   footer: {
-    marginTop: 'auto', 
+    marginTop: 'auto',
     padding: 20,
     backgroundColor: COLORS.secondary,
     alignItems: 'center',

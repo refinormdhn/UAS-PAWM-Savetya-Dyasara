@@ -6,7 +6,7 @@ import {
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { supabase } from '../lib/supabase';
+import { supabase } from '../services/supabase';
 import { COLORS } from '../config/theme';
 import { Ionicons } from '@expo/vector-icons';
 
