@@ -33,59 +33,79 @@ export default function LoginScreen({ navigation }) {
     if (error) Alert.alert('Login Gagal', error.message);
   }
 
-  // === 2. LOGIN GOOGLE (BARU) ===
+  // === 2. LOGIN GOOGLE (EXPO GO OPTIMIZED) ===
   async function handleGoogleLogin() {
     try {
       setLoading(true);
 
-      // A. Buat URL Redirect (virtuallab://...)
-      const redirectUrl = makeRedirectUri({
-        scheme: 'virtuallabapp', // Harus sama dengan app.json
-        path: 'auth/callback',
-      });
+      console.log('🚀 Starting Google OAuth...');
 
-      console.log('Redirect URL:', redirectUrl); // Untuk debugging
-
-      // B. Mulai Flow OAuth
+      // Untuk Expo Go, gunakan expo-auth-session approach
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: redirectUrl,
-          skipBrowserRedirect: true, // Kita handle browser manual
+          skipBrowserRedirect: true,
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ OAuth init error:', error);
+        throw error;
+      }
 
-      // C. Buka Browser HP
-      if (data?.url) {
-        const result = await WebBrowser.openAuthSessionAsync(
-          data.url,
-          redirectUrl
-        );
+      if (!data?.url) {
+        throw new Error('No OAuth URL generated');
+      }
 
-        // D. Jika User Berhasil Login & Kembali ke App
-        if (result.type === 'success' && result.url) {
-          // Ambil "code" atau "token" dari URL hasil redirect
-          const params = new URLSearchParams(result.url.split('#')[1] || result.url.split('?')[1]);
-          const accessToken = params.get('access_token');
-          const refreshToken = params.get('refresh_token');
+      console.log('🌐 Opening auth session...');
 
-          if (accessToken && refreshToken) {
-            // E. Simpan Session ke Supabase Mobile
-            const { error: sessionError } = await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken,
-            });
+      // Buka browser dengan AuthSession - ini akan auto-close
+      const result = await WebBrowser.openAuthSessionAsync(
+        data.url,
+        // Gunakan Supabase's redirect URL langsung
+        'https://zvkelfhmrjfvveembihp.supabase.co/auth/v1/callback'
+      );
 
-            if (sessionError) throw sessionError;
-            
-            // Berhasil! Navigasi otomatis akan ditangani oleh App.js (onAuthStateChange)
+      console.log('🔙 Auth session result:', result.type);
+
+      if (result.type === 'success' && result.url) {
+        console.log('✅ Got redirect URL');
+
+        // Extract session dari URL
+        const url = result.url;
+        const hashPart = url.split('#')[1];
+        const queryPart = url.split('?')[1];
+
+        const params = new URLSearchParams(hashPart || queryPart || '');
+        const access_token = params.get('access_token');
+        const refresh_token = params.get('refresh_token');
+
+        if (access_token && refresh_token) {
+          console.log('💾 Setting session...');
+
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token,
+            refresh_token,
+          });
+
+          if (sessionError) {
+            console.error('❌ Session error:', sessionError);
+            throw sessionError;
           }
+
+          console.log('✅ Login successful!');
+          Alert.alert('Success', 'Login with Google successful!');
+        } else {
+          console.error('❌ No tokens in URL');
+          throw new Error('Authentication failed - no tokens received');
         }
+      } else if (result.type === 'cancel') {
+        console.log('⚠️ User cancelled');
+        Alert.alert('Cancelled', 'Login cancelled');
       }
     } catch (err) {
-      Alert.alert('Google Login Error', err.message);
+      console.error('❌ Error:', err);
+      Alert.alert('Login Failed', err.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }

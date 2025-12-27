@@ -9,6 +9,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../services/supabase';
 import { COLORS } from '../config/theme';
 import { Ionicons } from '@expo/vector-icons';
+import DraggableFlatList, {
+  RenderItemParams,
+  ScaleDecorator,
+} from "react-native-draggable-flatlist";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 const TOPIC_NAMES = {
   1: "Engaging Your Audience",
@@ -70,15 +75,8 @@ export default function QuizScreen({ navigation }) {
     setAnswers(prev => ({ ...prev, [currentIndex]: answer }));
   };
 
-  const handleOrdering = (option, action) => {
-    const currentAns = answers[currentIndex] || [];
-    
-    if (action === 'add') {
-      setAnswers(prev => ({ ...prev, [currentIndex]: [...currentAns, option] }));
-    } else {
-      const newAns = currentAns.filter(item => item !== option);
-      setAnswers(prev => ({ ...prev, [currentIndex]: newAns }));
-    }
+  const handleOrdering = (data) => {
+    setAnswers(prev => ({ ...prev, [currentIndex]: data }));
   };
 
   const handleNext = async () => {
@@ -86,7 +84,7 @@ export default function QuizScreen({ navigation }) {
     const userAns = answers[currentIndex];
 
     if (!userAns || (currentQ.type === 'ordering' && userAns.length !== currentQ.options.length)) {
-      Alert.alert("Hold on!", "Please complete the answer before continuing.");
+      Alert.alert("Tunggu!", "Silakan lengkapi jawaban sebelum melanjutkan.");
       return;
     }
 
@@ -181,75 +179,101 @@ export default function QuizScreen({ navigation }) {
 
   if (currentTopicId) {
     const q = currentQuestions[currentIndex];
-    
-    return (
-      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          <Text style={styles.progressText}>
-            Question {currentIndex + 1} of {currentQuestions.length}
-          </Text>
-          
-          <View style={styles.questionCard}>
-            <Text style={styles.questionText}>{q.question}</Text>
 
-            <View style={styles.optionsContainer}>
-              {q.type === 'ordering' ? (
-                <>
-                  <Text style={styles.instruction}>Tap options in the correct order:</Text>
-                  
-                  <View style={styles.orderBox}>
-                     {(answers[currentIndex] || []).map((ans, i) => (
-                       <TouchableOpacity key={i} onPress={() => handleOrdering(ans, 'remove')} style={styles.orderItem}>
-                         <Text style={styles.orderText}>{i+1}. {ans}</Text>
-                         <Ionicons name="close-circle" size={20} color="red" />
-                       </TouchableOpacity>
-                     ))}
-                     {(!answers[currentIndex] || answers[currentIndex].length === 0) && 
-                        <Text style={{color:'#999', fontStyle:'italic'}}>Tap options below to fill here...</Text>
-                     }
-                  </View>
+    // Initialize answers for ordering question if not already set
+    if (q.type === 'ordering' && !answers[currentIndex]) {
+      setAnswers(prev => ({...prev, [currentIndex]: q.options}));
+    }
 
-                  <View style={styles.optionList}>
-                    {q.options.map((opt, i) => {
-                      const isSelected = (answers[currentIndex] || []).includes(opt);
-                      if (isSelected) return null;
-                      return (
-                        <TouchableOpacity key={i} style={styles.optionButton} onPress={() => handleOrdering(opt, 'add')}>
-                          <Text style={styles.optionText}>{opt}</Text>
-                        </TouchableOpacity>
-                      )
-                    })}
-                  </View>
-                </>
-              ) : (
-                q.options.map((opt, i) => (
-                  <TouchableOpacity 
-                    key={i} 
-                    style={[
-                      styles.optionButton, 
-                      answers[currentIndex] === opt && styles.optionSelected
-                    ]} 
-                    onPress={() => handleSelectAnswer(q.id, opt)}
-                  >
-                    <Text style={[
-                      styles.optionText,
-                      answers[currentIndex] === opt && styles.optionTextSelected
-                    ]}>{opt}</Text>
-                  </TouchableOpacity>
-                ))
-              )}
+    const renderItem = ({ item, drag, isActive }) => {
+      return (
+        <ScaleDecorator>
+          <TouchableOpacity
+            onLongPress={drag}
+            disabled={isActive}
+            style={[
+              styles.orderItem,
+              { 
+                backgroundColor: isActive ? '#E3F6F5' : '#fff',
+                elevation: isActive ? 4 : 2,
+              }
+            ]}
+          >
+            <View style={styles.orderItemContent}>
+              <Ionicons name="reorder-three-outline" size={24} color="#999" style={{marginRight: 10}} />
+              <Text style={styles.orderText}>{item}</Text>
             </View>
-          </View>
-
-          <TouchableOpacity style={styles.btnPrimary} onPress={handleNext}>
-            <Text style={styles.btnText}>
-              {currentIndex === currentQuestions.length - 1 ? 'Submit Quiz' : 'Next Question'}
-            </Text>
           </TouchableOpacity>
-        
-        </ScrollView>
-      </SafeAreaView>
-    );
+        </ScaleDecorator>
+      );
+    };
+
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={true}
+            nestedScrollEnabled={true}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Text style={styles.progressText}>
+              Question {currentIndex + 1} of {currentQuestions.length}
+            </Text>
+
+            <View style={styles.questionCard}>
+              <Text style={styles.questionText}>{q.question}</Text>
+
+              <View style={styles.optionsContainer}>
+                {q.type === 'ordering' ? (
+                  <>
+                    <Text style={styles.instruction}>
+                      Drag dan drop untuk mengurutkan jawaban yang benar:
+                    </Text>
+                    
+                    <DraggableFlatList
+                      data={answers[currentIndex] || []}
+                      onDragEnd={({ data }) => handleOrdering(data)}
+                      keyExtractor={(item) => item}
+                      renderItem={renderItem}
+                      containerStyle={{ overflow: 'visible' }}
+                    />
+                  </>
+                ) : (
+                  q.options.map((opt, i) => (
+                    <TouchableOpacity
+                      key={i}
+                      style={[
+                        styles.optionButton,
+                        answers[currentIndex] === opt && styles.optionSelected,
+                      ]}
+                      onPress={() => handleSelectAnswer(q.id, opt)}
+                    >
+                      <Text
+                        style={[
+                          styles.optionText,
+                          answers[currentIndex] === opt &&
+                            styles.optionTextSelected,
+                        ]}
+                      >
+                        {opt}
+                      </Text>
+                    </TouchableOpacity>
+                  ))
+                )}
+              </View>
+            </View>
+
+            <TouchableOpacity style={styles.btnPrimary} onPress={handleNext}>
+              <Text style={styles.btnText}>
+                {currentIndex === currentQuestions.length - 1 ? 'Submit Quiz' : 'Next Question'}
+              </Text>
+            </TouchableOpacity>
+          
+          </ScrollView>
+        </SafeAreaView>
+      </GestureHandlerRootView>
+      );
   }
 
   return (
@@ -298,23 +322,114 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff', padding: 20, borderRadius: 15, elevation: 3, marginBottom: 20
   },
   questionText: { fontSize: 18, fontWeight: 'bold', color: COLORS.secondary, marginBottom: 20 },
-  instruction: { fontSize: 14, color: COLORS.primary, marginBottom: 10, fontStyle:'italic' },
+  instruction: {
+    fontSize: 16,
+    color: COLORS.secondary,
+    marginBottom: 15,
+    fontWeight: '600',
+    textAlign: 'center'
+  },
   optionsContainer: { gap: 10 },
   optionButton: {
     padding: 15, borderRadius: 10, backgroundColor: '#f0f0f0', borderWidth: 1, borderColor: '#ddd'
   },
   optionSelected: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  optionText: { fontSize: 16, color: '#333' },
+  optionText: { fontSize: 16, color: '#333', flex: 1, marginLeft: 8 },
   optionTextSelected: { color: '#fff', fontWeight: 'bold' },
-  orderBox: { 
-    minHeight: 50, backgroundColor: '#E3F6F5', borderRadius: 8, padding: 10, marginBottom: 20,
-    borderWidth: 2, borderColor: COLORS.primary, borderStyle: 'dashed'
+
+  // Ordering Question Styles (IMPROVED)
+  orderBox: {
+    minHeight: 120,
+    backgroundColor: '#E8F5E9',
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    borderStyle: 'dashed'
+  },
+  orderBoxTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+    marginBottom: 10,
   },
   orderItem: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: '#fff', padding: 10, borderRadius: 5, marginBottom: 5, elevation: 1
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
-  orderText: { fontWeight: '600', color: COLORS.secondary },
+  orderItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  orderNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  orderNumberText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  orderText: {
+    fontWeight: '600',
+    color: COLORS.secondary,
+    flex: 1,
+    fontSize: 15,
+  },
+  emptyOrderBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
+  emptyOrderText: {
+    color: '#999',
+    fontStyle: 'italic',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  availableOptionsTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLORS.secondary,
+    marginBottom: 10,
+  },
+  optionList: {
+    gap: 10,
+  },
+  availableOptionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 15,
+    borderRadius: 10,
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    borderStyle: 'solid',
+  },
+  allSelectedText: {
+    textAlign: 'center',
+    color: '#4CAF50',
+    fontWeight: 'bold',
+    fontSize: 14,
+    paddingVertical: 10,
+  },
   btnPrimary: {
     backgroundColor: COLORS.primary, padding: 15, borderRadius: 50, alignItems: 'center', elevation: 3
   },

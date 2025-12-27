@@ -5,6 +5,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { ActivityIndicator, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 // Import Konfigurasi
 import { supabase } from './src/services/supabase';
@@ -107,16 +108,18 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {session && session.user ? (
-          // === AUTHENTICATED - Show Bottom Tabs ===
-          <Stack.Screen name="Main" component={MainTabs} />
-        ) : (
-          // === NOT AUTHENTICATED - Show Login ===
-          <Stack.Screen name="Login" component={LoginScreen} />
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <NavigationContainer>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          {session && session.user ? (
+            // === AUTHENTICATED - Show Bottom Tabs ===
+            <Stack.Screen name="Main" component={MainTabs} />
+          ) : (
+            // === NOT AUTHENTICATED - Show Login ===
+            <Stack.Screen name="Login" component={LoginScreen} />
+          )}
+        </Stack.Navigator>
+      </NavigationContainer>
+    </GestureHandlerRootView>
   );
 }
