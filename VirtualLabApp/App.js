@@ -1,15 +1,18 @@
 import 'react-native-gesture-handler';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 // Import Konfigurasi
 import { supabase } from './src/services/supabase';
 import { COLORS } from './src/config/theme';
+
+// Import Components
+import CustomSplashScreen from './src/components/CustomSplashScreen';
 
 // Import Screens
 import LoginScreen from './src/screens/LoginScreen';
@@ -84,12 +87,101 @@ function MainTabs() {
 export default function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showSplash, setShowSplash] = useState(true);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const glitchAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Fade in animation
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 1000,
+      useNativeDriver: true,
+    }).start();
+
+    // Initialize session and hide splash after minimum display time
+    const initializeApp = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
       setLoading(false);
-    });
+
+      // Show splash for 2.5 seconds normally
+      setTimeout(() => {
+        // Start very soft, slow glitch effect - logo and text together
+        Animated.sequence([
+          // Glitch 1: very slow gentle fade
+          Animated.timing(glitchAnim, {
+            toValue: 0.4,
+            duration: 600,
+            useNativeDriver: true
+          }),
+          Animated.timing(glitchAnim, {
+            toValue: 1,
+            duration: 600,
+            useNativeDriver: true
+          }),
+
+          // Long pause
+          Animated.delay(500),
+
+          // Glitch 2: medium soft fade
+          Animated.timing(glitchAnim, {
+            toValue: 0.15,
+            duration: 500,
+            useNativeDriver: true
+          }),
+          Animated.timing(glitchAnim, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true
+          }),
+
+          // Long pause
+          Animated.delay(600),
+
+          // Glitch 3: very gentle fade
+          Animated.timing(glitchAnim, {
+            toValue: 0.5,
+            duration: 550,
+            useNativeDriver: true
+          }),
+          Animated.timing(glitchAnim, {
+            toValue: 1,
+            duration: 550,
+            useNativeDriver: true
+          }),
+
+          // Pause
+          Animated.delay(400),
+
+          // Glitch 4: final very soft fade
+          Animated.timing(glitchAnim, {
+            toValue: 0.3,
+            duration: 500,
+            useNativeDriver: true
+          }),
+          Animated.timing(glitchAnim, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true
+          }),
+
+          // Short pause before final fade out
+          Animated.delay(300),
+
+          // Final smooth fade out
+          Animated.timing(fadeAnim, {
+            toValue: 0,
+            duration: 700,
+            useNativeDriver: true
+          }),
+        ]).start(() => {
+          setShowSplash(false);
+        });
+      }, 2500);
+    };
+
+    initializeApp();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
@@ -98,6 +190,11 @@ export default function App() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Show custom splash screen
+  if (showSplash) {
+    return <CustomSplashScreen fadeAnim={fadeAnim} glitchAnim={glitchAnim} />;
+  }
 
   if (loading) {
     return (
