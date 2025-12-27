@@ -3,7 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity, 
   StyleSheet, Alert, Image, ActivityIndicator 
 } from 'react-native';
-import { supabase } from '../services/supabase';
+import { supabase } from '../services/supabase'; // Sesuaikan path jika pakai src/lib
 import { COLORS, SIZES } from '../config/theme';
 import * as WebBrowser from 'expo-web-browser'; // Browser in-app
 import { makeRedirectUri } from 'expo-auth-session'; // Helper URL
@@ -33,79 +33,58 @@ export default function LoginScreen({ navigation }) {
     if (error) Alert.alert('Login Gagal', error.message);
   }
 
-  // === 2. LOGIN GOOGLE (EXPO GO OPTIMIZED) ===
   async function handleGoogleLogin() {
     try {
       setLoading(true);
-
       console.log('🚀 Starting Google OAuth...');
 
-      // Untuk Expo Go, gunakan expo-auth-session approach
+      // ⚠️ GANTI BAGIAN INI DENGAN URL DARI TERMINAL ANDA ⚠️
+      // Contoh: "exp://192.168.1.58:8081" (Tanpa /--/auth/callback)
+      // JANGAN PAKAI localhost. Pakai angka IP.
+      const redirectUrl = "exp://192.168.1.58:8081"; 
+
+      console.log('👉 URL Redirect Manual:', redirectUrl);
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
+          redirectTo: redirectUrl, 
           skipBrowserRedirect: true,
         },
       });
 
-      if (error) {
-        console.error('❌ OAuth init error:', error);
-        throw error;
-      }
-
-      if (!data?.url) {
-        throw new Error('No OAuth URL generated');
-      }
+      if (error) throw error;
+      if (!data?.url) throw new Error('No OAuth URL generated');
 
       console.log('🌐 Opening auth session...');
-
-      // Buka browser dengan AuthSession - ini akan auto-close
+      
+      // Buka Browser
       const result = await WebBrowser.openAuthSessionAsync(
         data.url,
-        // Gunakan Supabase's redirect URL langsung
-        'https://zvkelfhmrjfvveembihp.supabase.co/auth/v1/callback'
+        redirectUrl 
       );
 
-      console.log('🔙 Auth session result:', result.type);
+      // Log hasil browser untuk debugging
+      console.log('🔙 Result Browser:', result);
 
       if (result.type === 'success' && result.url) {
-        console.log('✅ Got redirect URL');
+        const params = new URLSearchParams(result.url.split('#')[1] || result.url.split('?')[1]);
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
 
-        // Extract session dari URL
-        const url = result.url;
-        const hashPart = url.split('#')[1];
-        const queryPart = url.split('?')[1];
-
-        const params = new URLSearchParams(hashPart || queryPart || '');
-        const access_token = params.get('access_token');
-        const refresh_token = params.get('refresh_token');
-
-        if (access_token && refresh_token) {
-          console.log('💾 Setting session...');
-
+        if (accessToken && refreshToken) {
           const { error: sessionError } = await supabase.auth.setSession({
-            access_token,
-            refresh_token,
+            access_token: accessToken,
+            refresh_token: refreshToken,
           });
 
-          if (sessionError) {
-            console.error('❌ Session error:', sessionError);
-            throw sessionError;
-          }
-
+          if (sessionError) throw sessionError;
           console.log('✅ Login successful!');
-          Alert.alert('Success', 'Login with Google successful!');
-        } else {
-          console.error('❌ No tokens in URL');
-          throw new Error('Authentication failed - no tokens received');
         }
-      } else if (result.type === 'cancel') {
-        console.log('⚠️ User cancelled');
-        Alert.alert('Cancelled', 'Login cancelled');
       }
     } catch (err) {
       console.error('❌ Error:', err);
-      Alert.alert('Login Failed', err.message || 'Something went wrong. Please try again.');
+      Alert.alert('Login Error', err.message);
     } finally {
       setLoading(false);
     }
@@ -168,7 +147,6 @@ export default function LoginScreen({ navigation }) {
           onPress={handleGoogleLogin}
           disabled={loading}
         >
-          {/* Ganti text dengan Icon Google jika punya gambarnya */}
           <Text style={styles.googleButtonText}>Sign in with Google</Text>
         </TouchableOpacity>
 

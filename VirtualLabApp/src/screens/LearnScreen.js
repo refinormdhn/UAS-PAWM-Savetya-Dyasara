@@ -26,7 +26,7 @@ const materialsData = [
     description: "Learn how to hook your audience from the very first second.",
     // Link Video (Array)
     videoUrls: ["https://www.youtube.com/embed/oTe4f-bBEKg"], 
-    pdfUrl: "https://zvkelfhmrjfvveembihp.supabase.co/storage/v1/object/public/materi/Engaging-Your-Audience.pdf", 
+    pdfUrl: "https://zvkelfhmrjfvveembihp.supabase.co/storage/v1/object/public/materi/Engaging-Your-Audience-and-Drafting-Openers.pdf", 
   },
   {
     id: 2,
@@ -35,7 +35,7 @@ const materialsData = [
     image: require('../../assets/images/home.png'),
     description: "Mastering voice, tone, and pacing for impactful speech.",
     videoUrls: ["https://www.youtube.com/embed/NiKtZgImdlY"],
-    pdfUrl: null, 
+    pdfUrl: "https://zvkelfhmrjfvveembihp.supabase.co/storage/v1/object/public/materi/Delivery-Techniques--Drafting-Conclusion-and-Writing-a-Process.pdf", 
   },
   {
     id: 3,
@@ -48,7 +48,7 @@ const materialsData = [
       "https://www.youtube.com/embed/V8eLdbKXGzk", // Video 1
       "https://www.youtube.com/embed/Y1qDNTG9lg0"  // Video 2
     ],
-    pdfUrl: "https://zvkelfhmrjfvveembihp.supabase.co/storage/v1/object/public/materi/Visual-Aids.pdf",
+    pdfUrl: "https://zvkelfhmrjfvveembihp.supabase.co/storage/v1/object/public/materi/Visual-Aids-and-Drafting-Body-of-Presentation.pdf",
   },
   {
     id: 4,
@@ -58,7 +58,7 @@ const materialsData = [
     description: "Strategies to handle tough questions with confidence.",
     // 👇 MATERI 4: Tidak ada video
     videoUrls: [], 
-    pdfUrl: "https://zvkelfhmrjfvveembihp.supabase.co/storage/v1/object/public/materi/Handling-Questions.pdf",
+    pdfUrl: "https://zvkelfhmrjfvveembihp.supabase.co/storage/v1/object/public/materi/Handling-Questions-and-Body-Language.pdf",
   },
 ];
 
