@@ -1,16 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, 
   StyleSheet, Alert, Image, ActivityIndicator 
 } from 'react-native';
 import { supabase } from '../services/supabase';
 import { COLORS, SIZES } from '../config/theme';
+import * as WebBrowser from 'expo-web-browser'; // Browser in-app
+import { makeRedirectUri } from 'expo-auth-session'; // Helper URL
+
+// Wajib untuk menangani redirect browser
+WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // === 1. LOGIN EMAIL BIASA ===
   async function handleLogin() {
     if (!email || !password) {
       Alert.alert('Error', 'Email dan Password harus diisi!');
@@ -24,11 +30,64 @@ export default function LoginScreen({ navigation }) {
     });
 
     setLoading(false);
+    if (error) Alert.alert('Login Gagal', error.message);
+  }
 
-    if (error) {
-      Alert.alert('Login Gagal', error.message);
-    } else {
-      navigation.replace('Home'); 
+  // === 2. LOGIN GOOGLE (BARU) ===
+  async function handleGoogleLogin() {
+    try {
+      setLoading(true);
+
+      // A. Buat URL Redirect (virtuallab://...)
+      const redirectUrl = makeRedirectUri({
+        scheme: 'virtuallabapp', // Harus sama dengan app.json
+        path: 'auth/callback',
+      });
+
+      console.log('Redirect URL:', redirectUrl); // Untuk debugging
+
+      // B. Mulai Flow OAuth
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl,
+          skipBrowserRedirect: true, // Kita handle browser manual
+        },
+      });
+
+      if (error) throw error;
+
+      // C. Buka Browser HP
+      if (data?.url) {
+        const result = await WebBrowser.openAuthSessionAsync(
+          data.url,
+          redirectUrl
+        );
+
+        // D. Jika User Berhasil Login & Kembali ke App
+        if (result.type === 'success' && result.url) {
+          // Ambil "code" atau "token" dari URL hasil redirect
+          const params = new URLSearchParams(result.url.split('#')[1] || result.url.split('?')[1]);
+          const accessToken = params.get('access_token');
+          const refreshToken = params.get('refresh_token');
+
+          if (accessToken && refreshToken) {
+            // E. Simpan Session ke Supabase Mobile
+            const { error: sessionError } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+
+            if (sessionError) throw sessionError;
+            
+            // Berhasil! Navigasi otomatis akan ditangani oleh App.js (onAuthStateChange)
+          }
+        }
+      }
+    } catch (err) {
+      Alert.alert('Google Login Error', err.message);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -76,6 +135,23 @@ export default function LoginScreen({ navigation }) {
           )}
         </TouchableOpacity>
 
+        {/* PEMBATAS "OR" */}
+        <View style={styles.dividerContainer}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>OR</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        {/* TOMBOL GOOGLE */}
+        <TouchableOpacity 
+          style={styles.googleButton} 
+          onPress={handleGoogleLogin}
+          disabled={loading}
+        >
+          {/* Ganti text dengan Icon Google jika punya gambarnya */}
+          <Text style={styles.googleButtonText}>Sign in with Google</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.footerLink}>
           <Text style={styles.linkText}>Don't have an account? Sign Up</Text>
         </TouchableOpacity>
@@ -91,40 +167,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: SIZES.padding,
   },
-  header: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  logo: {
-    width: 150,
-    height: 150,
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: COLORS.secondary,
-    marginBottom: 10,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-  },
+  header: { alignItems: 'center', marginBottom: 40 },
+  logo: { width: 150, height: 150, marginBottom: 20 },
+  title: { fontSize: 28, fontWeight: 'bold', color: COLORS.secondary, marginBottom: 10 },
+  subtitle: { fontSize: 16, color: '#666' },
   form: {
     backgroundColor: COLORS.white,
     padding: 20,
     borderRadius: SIZES.borderRadius,
+    elevation: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 5,
-    elevation: 5, // Shadow untuk Android
   },
-  label: {
-    marginBottom: 5,
-    color: COLORS.text,
-    fontWeight: '600',
-  },
+  label: { marginBottom: 5, color: COLORS.text, fontWeight: '600' },
   input: {
     borderWidth: 1,
     borderColor: COLORS.inputBorder,
@@ -140,17 +197,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
   },
-  buttonText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: 'bold',
+  buttonText: { color: COLORS.white, fontSize: 16, fontWeight: 'bold' },
+  
+  // Styles Tambahan untuk Google & Divider
+  dividerContainer: {
+    flexDirection: 'row', alignItems: 'center', marginVertical: 20
   },
-  footerLink: {
-    marginTop: 20,
+  dividerLine: { flex: 1, height: 1, backgroundColor: '#ddd' },
+  dividerText: { marginHorizontal: 10, color: '#888', fontWeight: 'bold' },
+  
+  googleButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    padding: 15,
+    borderRadius: 8,
     alignItems: 'center',
   },
-  linkText: {
-    color: COLORS.primary,
-    fontWeight: '500',
+  googleButtonText: {
+    color: '#333',
+    fontSize: 16,
+    fontWeight: '600',
   },
+  
+  footerLink: { marginTop: 20, alignItems: 'center' },
+  linkText: { color: COLORS.primary, fontWeight: '500' },
 });
