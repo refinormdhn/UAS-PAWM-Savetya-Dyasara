@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, 
-  Alert, ScrollView 
+import {
+  View, Text, TouchableOpacity, StyleSheet, ActivityIndicator,
+  Alert, ScrollView, Image, Dimensions
 } from 'react-native';
-
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 import { supabase } from '../services/supabase';
 import { COLORS } from '../config/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,12 +12,41 @@ import DraggableFlatList, {
   ScaleDecorator,
 } from "react-native-draggable-flatlist";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { AnimatedCircularProgress } from 'react-native-circular-progress';
 
 const TOPIC_NAMES = {
   1: "Engaging Your Audience",
   2: "Delivery Techniques",
   3: "Visual Aids & Body",
   4: "Handling Questions"
+};
+const TOPIC_IMAGES = {
+  1: require('../../assets/images/audience_engagement.jpg'),
+  2: require('../../assets/images/presentation_delivery.jpg'),
+  3: require('../../assets/images/visual_aids.jpg'),
+  4: require('../../assets/images/handling_questions.jpg')
+};
+const getScoreMessage = (score) => {
+  if (score === 0) {
+    return "Feel free to revise the material again to improve your score!";
+  } else if (score < 40) {
+    return "Don't give up, try again!";
+  } else if (score < 60) {
+    return "A bit more practice and you'll do great!";
+  } else if (score < 80) {
+    return "You're doing great, keep it up!";
+  } else if (score < 100) {
+    return "Excellent work! You've mastered most of the material!";
+  } else {
+    return "Congratulations on your perfect score!!";
+  }
+};
+
+const getScoreColor = (score) => {
+  if (score < 40) return '#E74C3C'; // Red
+  if (score < 60) return '#F39C12'; // Orange
+  if (score < 80) return '#F1C40F'; // Yellow
+  return '#27AE60'; // Green
 };
 
 export default function QuizScreen({ navigation }) {
@@ -77,6 +104,12 @@ export default function QuizScreen({ navigation }) {
 
   const handleOrdering = (data) => {
     setAnswers(prev => ({ ...prev, [currentIndex]: data }));
+  };
+
+  const handlePrevious = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
   };
 
   const handleNext = async () => {
@@ -147,24 +180,52 @@ export default function QuizScreen({ navigation }) {
   }
 
   if (quizFinished && scoreResult) {
+    const scoreColor = getScoreColor(scoreResult.score);
+    const scoreMessage = getScoreMessage(scoreResult.score);
+
     return (
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <View style={styles.resultCard}>
-          <Text style={styles.emoji}>
-            {scoreResult.score >= 80 ? '🌟' : scoreResult.score >= 60 ? '😊' : '💪'}
-          </Text>
-          <Text style={styles.scoreText}>{scoreResult.score}%</Text>
-          <Text style={styles.resultMsg}>
-            {scoreResult.score >= 80 ? 'Excellent!' : 'Good Job! Keep Learning.'}
-          </Text>
-          
-          <View style={styles.statBox}>
-             <Text>✅ Correct: {scoreResult.correct}</Text>
-             <Text>❌ Wrong: {scoreResult.total - scoreResult.correct}</Text>
+          <AnimatedCircularProgress
+            size={220}
+            width={20}
+            fill={scoreResult.score}
+            tintColor={scoreColor}
+            backgroundColor="#E8E8E8"
+            rotation={0}
+            lineCap="round"
+            duration={1500}
+          >
+            {() => (
+              <View style={styles.scoreCircleContent}>
+                <Text style={[styles.scorePercentage, { color: scoreColor }]}>
+                  {scoreResult.score}%
+                </Text>
+                <Text style={styles.scoreLabel}>Your Score</Text>
+              </View>
+            )}
+          </AnimatedCircularProgress>
+          <Text style={styles.resultMessage}>{scoreMessage}</Text>
+          <View style={styles.statsContainer}>
+            <View style={styles.statCard}>
+              <View style={[styles.statIconBox, { backgroundColor: '#D4EDDA' }]}>
+                <Ionicons name="checkmark-circle" size={32} color="#27AE60" />
+              </View>
+              <Text style={styles.statNumber}>{scoreResult.correct}</Text>
+              <Text style={styles.statLabel}>Correct</Text>
+            </View>
+
+            <View style={styles.statCard}>
+              <View style={[styles.statIconBox, { backgroundColor: '#F8D7DA' }]}>
+                <Ionicons name="close-circle" size={32} color="#E74C3C" />
+              </View>
+              <Text style={styles.statNumber}>{scoreResult.total - scoreResult.correct}</Text>
+              <Text style={styles.statLabel}>Wrong</Text>
+            </View>
           </View>
 
-          <TouchableOpacity 
-            style={styles.btnPrimary} 
+          <TouchableOpacity
+            style={styles.btnPrimary}
             onPress={() => {
               setQuizFinished(false);
               setCurrentTopicId(null);
@@ -179,8 +240,6 @@ export default function QuizScreen({ navigation }) {
 
   if (currentTopicId) {
     const q = currentQuestions[currentIndex];
-
-    // Initialize answers for ordering question if not already set
     if (q.type === 'ordering' && !answers[currentIndex]) {
       setAnswers(prev => ({...prev, [currentIndex]: q.options}));
     }
@@ -211,36 +270,31 @@ export default function QuizScreen({ navigation }) {
     return (
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={true}
-            nestedScrollEnabled={true}
-            keyboardShouldPersistTaps="handled"
-          >
+          <View style={{ flex: 1, padding: 20 }}>
             <Text style={styles.progressText}>
               Question {currentIndex + 1} of {currentQuestions.length}
             </Text>
 
-            <View style={styles.questionCard}>
+            <View style={[styles.questionCard, q.type === 'ordering' && { flex: 1 }]}>
               <Text style={styles.questionText}>{q.question}</Text>
 
-              <View style={styles.optionsContainer}>
-                {q.type === 'ordering' ? (
-                  <>
-                    <Text style={styles.instruction}>
-                      Drag dan drop untuk mengurutkan jawaban yang benar:
-                    </Text>
-                    
-                    <DraggableFlatList
-                      data={answers[currentIndex] || []}
-                      onDragEnd={({ data }) => handleOrdering(data)}
-                      keyExtractor={(item) => item}
-                      renderItem={renderItem}
-                      containerStyle={{ overflow: 'visible' }}
-                    />
-                  </>
-                ) : (
-                  q.options.map((opt, i) => (
+              {q.type === 'ordering' ? (
+                <View style={{ flex: 1 }}>
+                  <DraggableFlatList
+                    data={answers[currentIndex] || []}
+                    onDragEnd={({ data }) => handleOrdering(data)}
+                    keyExtractor={(item) => item}
+                    renderItem={renderItem}
+                  />
+                </View>
+              ) : (
+                <ScrollView
+                  style={styles.optionsScrollContainer}
+                  contentContainerStyle={styles.optionsContainer}
+                  showsVerticalScrollIndicator={false}
+                  nestedScrollEnabled={true}
+                >
+                  {q.options.map((opt, i) => (
                     <TouchableOpacity
                       key={i}
                       style={[
@@ -259,18 +313,35 @@ export default function QuizScreen({ navigation }) {
                         {opt}
                       </Text>
                     </TouchableOpacity>
-                  ))
-                )}
-              </View>
+                  ))}
+                </ScrollView>
+              )}
             </View>
 
-            <TouchableOpacity style={styles.btnPrimary} onPress={handleNext}>
-              <Text style={styles.btnText}>
-                {currentIndex === currentQuestions.length - 1 ? 'Submit Quiz' : 'Next Question'}
-              </Text>
-            </TouchableOpacity>
-          
-          </ScrollView>
+            <View style={styles.navigationButtons}>
+              {currentIndex > 0 && (
+                <TouchableOpacity
+                  style={[styles.btnSecondary, { flex: 1 }]}
+                  onPress={handlePrevious}
+                >
+                  <Ionicons name="chevron-back" size={20} color={COLORS.primary} />
+                  <Text style={styles.btnSecondaryText}>Previous</Text>
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity
+                style={[styles.btnPrimary, { flex: 1 }]}
+                onPress={handleNext}
+              >
+                <Text style={styles.btnText}>
+                  {currentIndex === currentQuestions.length - 1 ? 'Submit Quiz' : 'Next Question'}
+                </Text>
+                {currentIndex < currentQuestions.length - 1 && (
+                  <Ionicons name="chevron-forward" size={20} color="#fff" />
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
         </SafeAreaView>
       </GestureHandlerRootView>
       );
@@ -278,22 +349,40 @@ export default function QuizScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <Text style={styles.headerTitle}>Select Quiz Topic</Text>
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.introSection}>
+          <Image
+            source={require('../../assets/images/dive_into_quiz.png')}
+            style={styles.introImage}
+            resizeMode="cover"
+          />
+          <View style={styles.introOverlay}>
+            <Text style={styles.introTitle}>Dive into a World of</Text>
+            <Text style={styles.introSubtitle}>Endless Trivia Fun</Text>
+            <Text style={styles.introDescription}>
+              Get ready to challenge yourself by filling out these quizzes and find out how well you master each topic!
+            </Text>
+          </View>
+        </View>
+        <Text style={styles.sectionTitle}>Let's Start the Game!</Text>
         {availableTopics.map((topicId) => (
-          <TouchableOpacity 
-            key={topicId} 
-            style={styles.topicCard} 
+          <TouchableOpacity
+            key={topicId}
+            style={styles.topicCard}
             onPress={() => startQuiz(topicId)}
           >
-            <View style={styles.iconBox}>
-              <Ionicons name="school" size={24} color={COLORS.primary} />
+            <Image
+              source={TOPIC_IMAGES[topicId]}
+              style={styles.topicImage}
+              resizeMode="cover"
+            />
+            <View style={styles.topicOverlay}>
+              <View style={styles.topicContent}>
+                <Text style={styles.topicTitle}>{TOPIC_NAMES[topicId] || `Topic ${topicId}`}</Text>
+                <Text style={styles.topicSubtitle}>{quizData[topicId].length} Questions</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="#fff" />
             </View>
-            <View>
-              <Text style={styles.topicTitle}>{TOPIC_NAMES[topicId] || `Topic ${topicId}`}</Text>
-              <Text style={styles.topicSubtitle}>{quizData[topicId].length} Questions</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color="#ccc" style={{marginLeft: 'auto'}} />
           </TouchableOpacity>
         ))}
         {availableTopics.length === 0 && <Text>No quizzes available.</Text>}
@@ -305,18 +394,103 @@ export default function QuizScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F5F7FA' },
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  scrollContent: { padding: 20 },
-  headerTitle: { fontSize: 22, fontWeight: 'bold', margin: 20, color: COLORS.secondary },
+  scrollContent: { paddingBottom: 20 },
+  quizScrollContent: { padding: 20 },
+  introSection: {
+    height: 250,
+    marginBottom: 20,
+    borderRadius: 0,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  introImage: {
+    width: '100%',
+    height: '100%',
+  },
+  introOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(44, 105, 141, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  introTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 5,
+  },
+  introSubtitle: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 15,
+  },
+  introDescription: {
+    fontSize: 15,
+    color: '#fff',
+    textAlign: 'center',
+    lineHeight: 22,
+    paddingHorizontal: 20,
+    fontWeight: '600',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: COLORS.secondary,
+    marginBottom: 15,
+    paddingHorizontal: 20,
+  },
+
   topicCard: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff',
-    padding: 15, borderRadius: 12, marginBottom: 15, elevation: 2
+    height: 140,
+    marginHorizontal: 20,
+    marginBottom: 15,
+    borderRadius: 15,
+    overflow: 'hidden',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
-  iconBox: {
-    width: 50, height: 50, borderRadius: 25, backgroundColor: '#E3F6F5',
-    justifyContent: 'center', alignItems: 'center', marginRight: 15
+  topicImage: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
   },
-  topicTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.secondary },
-  topicSubtitle: { color: '#888', fontSize: 12 },
+  topicOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 20,
+  },
+  topicContent: {
+    flex: 1,
+  },
+  topicTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 5,
+  },
+  topicSubtitle: {
+    fontSize: 14,
+    color: '#fff',
+    opacity: 0.9,
+  },
   progressText: { textAlign: 'center', color: '#888', marginBottom: 10 },
   questionCard: {
     backgroundColor: '#fff', padding: 20, borderRadius: 15, elevation: 3, marginBottom: 20
@@ -329,15 +503,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center'
   },
-  optionsContainer: { gap: 10 },
+  optionsScrollContainer: {
+    maxHeight: 400,
+  },
+  optionsContainer: {
+    gap: 10,
+    paddingBottom: 10,
+  },
   optionButton: {
     padding: 15, borderRadius: 10, backgroundColor: '#f0f0f0', borderWidth: 1, borderColor: '#ddd'
   },
   optionSelected: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   optionText: { fontSize: 16, color: '#333', flex: 1, marginLeft: 8 },
   optionTextSelected: { color: '#fff', fontWeight: 'bold' },
-
-  // Ordering Question Styles (IMPROVED)
   orderBox: {
     minHeight: 120,
     backgroundColor: '#E8F5E9',
@@ -430,15 +608,104 @@ const styles = StyleSheet.create({
     fontSize: 14,
     paddingVertical: 10,
   },
+  navigationButtons: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 20,
+  },
   btnPrimary: {
-    backgroundColor: COLORS.primary, padding: 15, borderRadius: 50, alignItems: 'center', elevation: 3
+    backgroundColor: COLORS.primary,
+    padding: 15,
+    borderRadius: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+    flexDirection: 'row',
+    gap: 8,
   },
-  btnText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  btnSecondary: {
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  btnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold'
+  },
+  btnSecondaryText: {
+    color: COLORS.primary,
+    fontSize: 16,
+    fontWeight: 'bold'
+  },
   resultCard: {
-    flex: 1, justifyContent: 'center', alignItems: 'center', padding: 30
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 30
   },
-  emoji: { fontSize: 80, marginBottom: 20 },
-  scoreText: { fontSize: 48, fontWeight: 'bold', color: COLORS.primary },
-  resultMsg: { fontSize: 20, color: COLORS.secondary, marginBottom: 30 },
-  statBox: { marginBottom: 40, alignItems: 'center' }
+  scoreCircleContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scorePercentage: {
+    fontSize: 48,
+    fontWeight: 'bold',
+  },
+  scoreLabel: {
+    fontSize: 14,
+    color: '#888',
+    marginTop: 5,
+  },
+  resultMessage: {
+    fontSize: 16,
+    color: COLORS.secondary,
+    textAlign: 'center',
+    marginTop: 30,
+    marginBottom: 30,
+    paddingHorizontal: 20,
+    lineHeight: 24,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    gap: 15,
+    marginBottom: 20,
+  },
+  statCard: {
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    padding: 20,
+    alignItems: 'center',
+    minWidth: 120,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  statIconBox: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  statNumber: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: COLORS.secondary,
+    marginBottom: 5,
+  },
+  statLabel: {
+    fontSize: 14,
+    color: '#888',
+  },
 });
