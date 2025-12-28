@@ -11,7 +11,7 @@ export default function HomeScreen() {
   const navigation = useNavigation();
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         
         {/* === HERO SECTION === */}
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
     paddingBottom: 20,
-    paddingTop: 20, 
+    paddingTop: 20,
   },
   heroSection: {
     padding: 20,

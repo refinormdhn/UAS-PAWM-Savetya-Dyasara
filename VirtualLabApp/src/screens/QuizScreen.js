@@ -184,7 +184,7 @@ export default function QuizScreen({ navigation }) {
     const scoreMessage = getScoreMessage(scoreResult.score);
 
     return (
-      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
         <View style={styles.resultCard}>
           <AnimatedCircularProgress
             size={220}
@@ -269,7 +269,7 @@ export default function QuizScreen({ navigation }) {
 
     return (
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
           <View style={{ flex: 1, padding: 20 }}>
             <Text style={styles.progressText}>
               Question {currentIndex + 1} of {currentQuestions.length}
@@ -348,7 +348,7 @@ export default function QuizScreen({ navigation }) {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.introSection}>
           <Image

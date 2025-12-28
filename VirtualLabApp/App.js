@@ -33,15 +33,21 @@ function MainTabs() {
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: '#999',
         tabBarStyle: {
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
+          height: 85,
+          paddingBottom: 25,
+          paddingTop: 10,
           elevation: 8,
           borderTopWidth: 0,
+          backgroundColor: '#fff',
         },
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: '600',
+          marginTop: 2,
+        },
+        tabBarIconStyle: {
+          marginTop: 5,
+          marginBottom: 3,
         },
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
@@ -56,7 +62,7 @@ function MainTabs() {
             iconName = focused ? 'person' : 'person-outline';
           }
 
-          return <Ionicons name={iconName} size={size} color={color} />;
+          return <Ionicons name={iconName} size={24} color={color} />;
         },
       })}
     >
