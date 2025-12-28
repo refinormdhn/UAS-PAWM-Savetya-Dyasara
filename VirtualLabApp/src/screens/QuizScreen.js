@@ -43,10 +43,10 @@ const getScoreMessage = (score) => {
 };
 
 const getScoreColor = (score) => {
-  if (score < 40) return '#E74C3C'; // Red
-  if (score < 60) return '#F39C12'; // Orange
-  if (score < 80) return '#F1C40F'; // Yellow
-  return '#27AE60'; // Green
+  if (score < 40) return '#E74C3C'; 
+  if (score < 60) return '#F39C12'; 
+  if (score < 80) return '#F1C40F'; 
+  return '#27AE60'; 
 };
 
 export default function QuizScreen({ navigation }) {

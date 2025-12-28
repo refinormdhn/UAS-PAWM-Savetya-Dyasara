@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
   Alert, ScrollView, Image, ActivityIndicator
@@ -7,39 +7,112 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../services/supabase';
 import { COLORS } from '../config/theme';
+import { useFocusEffect } from '@react-navigation/native';
+
+const TOPIC_NAMES = {
+  1: "Engaging Your Audience",
+  2: "Delivery Techniques",
+  3: "Visual Aids & Body",
+  4: "Handling Questions"
+};
 
 export default function ProfileScreen() {
   const [user, setUser] = useState(null);
-  const [stats, setStats] = useState({ totalQuizzes: 0, correctAnswers: 0, accuracy: 0 });
+  const [totalAttempts, setTotalAttempts] = useState(0);
+  const [recentQuiz, setRecentQuiz] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadUserData();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadUserData();
+    }, [])
+  );
 
   async function loadUserData() {
     try {
-      // Get current user
+      setLoading(true);
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       setUser(currentUser);
 
+      console.log('Current User:', currentUser?.email);
+
       if (currentUser) {
-        // Get quiz statistics
-        const { data: answers, error } = await supabase
+        const { data: userAnswers, error: answersError } = await supabase
           .from('user_answers')
-          .select('is_correct')
+          .select('*')
           .eq('user_id', currentUser.id);
 
-        if (!error && answers) {
-          const total = answers.length;
-          const correct = answers.filter(a => a.is_correct).length;
-          const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
+        console.log('Answers Error:', answersError);
+        console.log('Total User Answers:', userAnswers?.length);
 
-          setStats({
-            totalQuizzes: total,
-            correctAnswers: correct,
-            accuracy: accuracy
+        if (answersError) {
+          console.error('Error fetching answers:', answersError);
+          setTotalAttempts(0);
+          setRecentQuiz(null);
+          setLoading(false);
+          return;
+        }
+
+        if (!userAnswers || userAnswers.length === 0) {
+          console.log('No quiz data found');
+          setTotalAttempts(0);
+          setRecentQuiz(null);
+          setLoading(false);
+          return;
+        }
+
+        const questionIds = [...new Set(userAnswers.map(a => a.question_id))];
+        const { data: questions, error: questionsError } = await supabase
+          .from('quiz_questions')
+          .select('id, topic')
+          .in('id', questionIds);
+
+        console.log('Questions Error:', questionsError);
+        console.log('Total Questions:', questions?.length);
+
+        if (questionsError || !questions) {
+          console.error('Error fetching questions:', questionsError);
+          setTotalAttempts(0);
+          setRecentQuiz(null);
+          setLoading(false);
+          return;
+        }
+
+        const questionTopicMap = {};
+        questions.forEach(q => {
+          questionTopicMap[q.id] = q.topic;
+        });
+
+        const topicGroups = {};
+        userAnswers.forEach(answer => {
+          const topic = questionTopicMap[answer.question_id];
+          if (topic) {
+            if (!topicGroups[topic]) {
+              topicGroups[topic] = [];
+            }
+            topicGroups[topic].push(answer);
+          }
+        });
+
+        console.log('Topic Groups:', Object.keys(topicGroups));
+        setTotalAttempts(Object.keys(topicGroups).length);
+        console.log('Total Attempts (unique topics):', Object.keys(topicGroups).length);
+        const lastAnswer = userAnswers[userAnswers.length - 1];
+        const lastTopic = questionTopicMap[lastAnswer.question_id];
+
+        if (lastTopic && topicGroups[lastTopic]) {
+          const topicAnswers = topicGroups[lastTopic];
+          const correctCount = topicAnswers.filter(a => a.is_correct).length;
+          const totalQuestions = topicAnswers.length;
+          const score = Math.round((correctCount / totalQuestions) * 100);
+
+          setRecentQuiz({
+            topicName: TOPIC_NAMES[lastTopic] || `Topic ${lastTopic}`,
+            score: score
           });
+          console.log('Most Recent Quiz:', { topic: lastTopic, score, totalQuestions });
+        } else {
+          setRecentQuiz(null);
         }
       }
     } catch (error) {
@@ -95,63 +168,52 @@ export default function ProfileScreen() {
           <Text style={styles.userEmail}>{user?.email || 'No email'}</Text>
         </View>
 
-        {/* Stats Cards */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <Ionicons name="newspaper-outline" size={32} color={COLORS.primary} />
-            <Text style={styles.statNumber}>{stats.totalQuizzes}</Text>
-            <Text style={styles.statLabel}>Total Attempts</Text>
+        <View style={styles.infoSection}>
+          <Text style={styles.sectionTitle}>Quiz Statistics</Text>
+
+          <View style={styles.infoCard}>
+            <View style={styles.infoCardHeader}>
+              <View style={[styles.iconBox, { backgroundColor: '#F3E5F5' }]}>
+                <Ionicons name="list-outline" size={28} color="#9C27B0" />
+              </View>
+              <Text style={styles.infoCardTitle}>Total Quiz Attempts</Text>
+            </View>
+            <View style={styles.infoCardContent}>
+              <Text style={styles.totalQuizNumber}>{totalAttempts}</Text>
+              <Text style={styles.totalQuizLabel}>
+                {totalAttempts === 1 ? 'Quiz Attempt' : 'Quiz Attempts'}
+              </Text>
+            </View>
           </View>
 
-          <View style={styles.statCard}>
-            <Ionicons name="checkmark-circle-outline" size={32} color="#4CAF50" />
-            <Text style={styles.statNumber}>{stats.correctAnswers}</Text>
-            <Text style={styles.statLabel}>Correct Answers</Text>
-          </View>
-
-          <View style={styles.statCard}>
-            <Ionicons name="trophy-outline" size={32} color="#FF9800" />
-            <Text style={styles.statNumber}>{stats.accuracy}%</Text>
-            <Text style={styles.statLabel}>Accuracy</Text>
+          <View style={styles.infoCard}>
+            <View style={styles.infoCardHeader}>
+              <View style={[styles.iconBox, { backgroundColor: '#E3F2FD' }]}>
+                <Ionicons name="time-outline" size={28} color="#2196F3" />
+              </View>
+              <Text style={styles.infoCardTitle}>Most Recent Quiz</Text>
+            </View>
+            {recentQuiz ? (
+              <View style={styles.infoCardContent}>
+                <Text style={styles.infoTopicName}>{recentQuiz.topicName}</Text>
+                <View style={styles.scoreRow}>
+                  <Text style={styles.scoreText}>Score: </Text>
+                  <Text style={[styles.scoreValue, { color: recentQuiz.score >= 60 ? '#27AE60' : '#E74C3C' }]}>
+                    {recentQuiz.score}%
+                  </Text>
+                </View>
+              </View>
+            ) : (
+              <Text style={styles.noDataText}>No quiz taken yet</Text>
+            )}
           </View>
         </View>
 
-        {/* Account Settings */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account Settings</Text>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <Ionicons name="person-outline" size={24} color={COLORS.secondary} />
-            <Text style={styles.menuText}>Edit Profile</Text>
-            <Ionicons name="chevron-forward" size={20} color="#ccc" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <Ionicons name="notifications-outline" size={24} color={COLORS.secondary} />
-            <Text style={styles.menuText}>Notifications</Text>
-            <Ionicons name="chevron-forward" size={20} color="#ccc" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <Ionicons name="help-circle-outline" size={24} color={COLORS.secondary} />
-            <Text style={styles.menuText}>Help & Support</Text>
-            <Ionicons name="chevron-forward" size={20} color="#ccc" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <Ionicons name="information-circle-outline" size={24} color={COLORS.secondary} />
-            <Text style={styles.menuText}>About</Text>
-            <Ionicons name="chevron-forward" size={20} color="#ccc" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Logout Button */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={24} color="#fff" />
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
-
-        {/* App Version */}
+        
         <Text style={styles.versionText}>Version 1.0.0</Text>
       </ScrollView>
     </SafeAreaView>
@@ -205,59 +267,84 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#888',
   },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  infoSection: {
     marginBottom: 25,
-    gap: 10,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 15,
-    alignItems: 'center',
-    elevation: 2,
-  },
-  statNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.secondary,
-    marginTop: 8,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: '#888',
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  section: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 5,
-    marginBottom: 20,
-    elevation: 2,
   },
   sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.secondary,
+    marginBottom: 15,
+  },
+  infoCard: {
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    padding: 20,
+    marginBottom: 15,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  infoCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  iconBox: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+  },
+  infoCardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.secondary,
+    flex: 1,
+  },
+  infoCardContent: {
+    paddingLeft: 10,
+  },
+  infoTopicName: {
     fontSize: 18,
     fontWeight: 'bold',
     color: COLORS.secondary,
-    marginBottom: 5,
-    paddingHorizontal: 15,
-    paddingTop: 10,
+    marginBottom: 8,
   },
-  menuItem: {
+  scoreRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
-  menuText: {
-    flex: 1,
+  scoreText: {
     fontSize: 16,
-    color: COLORS.secondary,
-    marginLeft: 15,
+    color: '#666',
+  },
+  scoreValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  totalQuizNumber: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+    textAlign: 'center',
+    marginBottom: 5,
+  },
+  totalQuizLabel: {
+    fontSize: 14,
+    color: '#888',
+    textAlign: 'center',
+  },
+  noDataText: {
+    fontSize: 14,
+    color: '#999',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingVertical: 10,
   },
   logoutButton: {
     flexDirection: 'row',
