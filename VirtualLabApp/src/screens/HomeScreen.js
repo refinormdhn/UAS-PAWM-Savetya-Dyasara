@@ -15,7 +15,6 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         
         {/* === HERO SECTION === */}
-        {/* Tanpa Logo Header, langsung masuk ke konten */}
         <View style={styles.heroSection}>
           <Text style={styles.heroTitle}>
             Elevate your voice, <Text style={styles.highlight}>master</Text> the art of presentation
@@ -29,19 +28,26 @@ export default function HomeScreen() {
             and deliver impactful messages that truly connect with your audience.
           </Text>
 
-          <TouchableOpacity 
-            style={styles.ctaButton}
-            onPress={() => navigation.navigate('LearnTab')} 
-          >
-            <Text style={styles.ctaButtonText}>Start Learning</Text>
-          </TouchableOpacity>
+          {/* 👇 CONTAINER TOMBOL SEJAJAR 👇 */}
+          <View style={styles.buttonRow}>
+            
+            {/* Tombol 1: Start Learning */}
+            <TouchableOpacity 
+              style={styles.ctaButton}
+              onPress={() => navigation.navigate('Learn')} 
+            >
+              <Text style={styles.ctaButtonText}>Start Learning</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={[styles.ctaButton, { backgroundColor: COLORS.secondary, marginTop: -15 }]}
-            onPress={() => navigation.navigate('QuizTab')} 
-          >
-            <Text style={styles.ctaButtonText}>Take a Quiz</Text>
-          </TouchableOpacity>
+            {/* Tombol 2: Take a Quiz */}
+            <TouchableOpacity 
+              style={[styles.ctaButton, styles.secondaryBtn]}
+              onPress={() => navigation.navigate('Quiz')} 
+            >
+              <Text style={styles.ctaButtonText}>Take a Quiz</Text>
+            </TouchableOpacity>
+
+          </View>
 
           <Image 
             source={require('../../assets/images/home.png')} 
@@ -63,7 +69,6 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
     paddingBottom: 20,
-    // Tambahkan sedikit padding atas agar judul tidak terlalu mepet status bar
     paddingTop: 20, 
   },
   heroSection: {
@@ -93,19 +98,32 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     marginBottom: 25,
   },
+  
+  // === STYLE BARU UNTUK TOMBOL SEJAJAR ===
+  buttonRow: {
+    flexDirection: 'row', // Kunci agar sejajar horizontal
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 30,
+    gap: 15, // Jarak antar tombol
+  },
   ctaButton: {
+    flex: 1, // Agar kedua tombol punya lebar yang sama
     backgroundColor: COLORS.primary,
     paddingVertical: 12,
-    paddingHorizontal: 30,
     borderRadius: 50,
     elevation: 3,
-    marginBottom: 30,
+    alignItems: 'center', // Tengahin teks
+  },
+  secondaryBtn: {
+    backgroundColor: COLORS.secondary, // Warna pembeda untuk tombol Quiz
   },
   ctaButtonText: {
     color: COLORS.white,
-    fontSize: 16,
+    fontSize: 14, // Sedikit diperkecil agar muat
     fontWeight: 'bold',
   },
+  
   heroImage: {
     width: '100%',
     height: 250, 
