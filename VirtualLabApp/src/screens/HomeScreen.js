@@ -1,59 +1,78 @@
 import React from 'react';
 import { 
-  View, Text, Image, TouchableOpacity, StyleSheet, 
+  View, Text, ImageBackground, TouchableOpacity, StyleSheet, 
   ScrollView 
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS } from '../config/theme';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function HomeScreen() {
   const navigation = useNavigation();
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         
-        {/* === HERO SECTION === */}
-        <View style={styles.heroSection}>
-          <Text style={styles.heroTitle}>
-            Elevate your voice, <Text style={styles.highlight}>master</Text> the art of presentation
-          </Text>
+        {/* === 1. HERO HEADER (Gaya Quiz Blue) === */}
+        <View style={styles.headerContainer}>
+          <ImageBackground
+            source={require('../../assets/images/home.png')}
+            style={styles.heroBackground}
+            imageStyle={styles.heroImageStyle}
+          >
+            {/* Overlay Biru Transparan */}
+            <View style={styles.heroOverlay}>
+              {/* Teks Putih Bersih & Rata Tengah */}
+              <Text style={styles.heroTitle}>
+                Elevate your voice, master the art of presentation
+              </Text>
+              <Text style={styles.heroSubtitle}>
+                Build confidence and deliver impactful messages with Savetya Dyasara.
+              </Text>
+            </View>
+          </ImageBackground>
+        </View>
+
+        {/* === 2. BODY CONTENT (Tombol Kartu) === */}
+        <View style={styles.bodyContainer}>
           
-          <Text style={styles.creator}>by Savetya Dyasara</Text>
-          
-          <Text style={styles.heroDescription}>
-            Master the art of presentation and public speaking. 
-            Savetya Dyasara helps you build confidence, sharpen your communication skills, 
-            and deliver impactful messages that truly connect with your audience.
-          </Text>
+          <Text style={styles.sectionTitle}>Let's Start!</Text>
+          <Text style={styles.sectionSubtitle}>Choose your activity below</Text>
 
-          {/* 👇 CONTAINER TOMBOL SEJAJAR 👇 */}
-          <View style={styles.buttonRow}>
-            
-            {/* Tombol 1: Start Learning */}
-            <TouchableOpacity 
-              style={styles.ctaButton}
-              onPress={() => navigation.navigate('Learn')} 
-            >
-              <Text style={styles.ctaButtonText}>Start Learning</Text>
-            </TouchableOpacity>
+          {/* TOMBOL 1: LEARNING */}
+          <TouchableOpacity 
+            style={[styles.actionCard, styles.cardLearn]}
+            onPress={() => navigation.navigate('LearnTab')}
+            activeOpacity={0.9}
+          >
+            <View style={styles.cardIconBox}>
+              <Ionicons name="book" size={32} color={COLORS.primary} />
+            </View>
+            <View style={styles.cardContent}>
+              <Text style={styles.cardTitle}>Start Learning</Text>
+              <Text style={styles.cardDesc}>Access modules, videos & guides</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color="#ccc" />
+          </TouchableOpacity>
 
-            {/* Tombol 2: Take a Quiz */}
-            <TouchableOpacity 
-              style={[styles.ctaButton, styles.secondaryBtn]}
-              onPress={() => navigation.navigate('Quiz')} 
-            >
-              <Text style={styles.ctaButtonText}>Take a Quiz</Text>
-            </TouchableOpacity>
+          {/* TOMBOL 2: QUIZ */}
+          <TouchableOpacity 
+            style={[styles.actionCard, styles.cardQuiz]}
+            onPress={() => navigation.navigate('QuizTab')}
+            activeOpacity={0.9}
+          >
+            <View style={[styles.cardIconBox, styles.iconBoxQuiz]}>
+              <Ionicons name="trophy" size={32} color={COLORS.white} />
+            </View>
+            <View style={styles.cardContent}>
+              <Text style={[styles.cardTitle, styles.textWhite]}>Take a Quiz</Text>
+              <Text style={[styles.cardDesc, styles.textWhiteDesc]}>Test your skills & knowledge</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color="rgba(255,255,255,0.5)" />
+          </TouchableOpacity>
 
-          </View>
-
-          <Image 
-            source={require('../../assets/images/home.png')} 
-            style={styles.heroImage} 
-            resizeMode="contain"
-          />
         </View>
 
       </ScrollView>
@@ -64,69 +83,122 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.background, 
+    backgroundColor: '#F8F9FA',
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: 20,
-    paddingTop: 20,
+    paddingBottom: 30,
   },
-  heroSection: {
-    padding: 20,
-    alignItems: 'center', 
+
+  // === HEADER STYLES (Updated to Blue Quiz Style) ===
+  headerContainer: {
+    marginBottom: 20,
+    overflow: 'hidden',
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    backgroundColor: '#fff',
+    height: 300, // Sedikit lebih tinggi agar lega
+  },
+  heroBackground: {
+    width: '100%',
+    height: '100%', 
+  },
+  heroOverlay: {
+    flex: 1,
+    // 👇 INI KUNCINYA: Overlay Biru Transparan
+    backgroundColor: 'rgba(20, 60, 120, 0.85)', 
+    justifyContent: 'center', // Teks ke tengah vertikal
+    alignItems: 'center',     // Teks ke tengah horizontal
+    padding: 30,
   },
   heroTitle: {
     fontSize: 28,
     fontWeight: 'bold',
+    color: '#ffffff', // Putih bersih
+    textAlign: 'center', // Rata tengah
+    marginBottom: 15,
+    lineHeight: 34,
+  },
+  heroSubtitle: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.9)', // Putih agak transparan dikit
+    textAlign: 'center', // Rata tengah
+    lineHeight: 22,
+  },
+
+  // === BODY STYLES ===
+  bodyContainer: {
+    paddingHorizontal: 20,
+    marginTop: 10,
+  },
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
     color: COLORS.secondary,
-    textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 5,
   },
-  highlight: {
-    color: COLORS.primary,
-  },
-  creator: {
+  sectionSubtitle: {
     fontSize: 14,
     color: '#888',
+    marginBottom: 20,
+  },
+
+  // === CARD STYLES ===
+  actionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    borderRadius: 20,
     marginBottom: 15,
-    fontStyle: 'italic',
-  },
-  heroDescription: {
-    fontSize: 16,
-    color: '#555',
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 25,
-  },
-  
-  // === STYLE BARU UNTUK TOMBOL SEJAJAR ===
-  buttonRow: {
-    flexDirection: 'row', // Kunci agar sejajar horizontal
-    justifyContent: 'space-between',
-    width: '100%',
-    marginBottom: 30,
-    gap: 15, // Jarak antar tombol
-  },
-  ctaButton: {
-    flex: 1, // Agar kedua tombol punya lebar yang sama
-    backgroundColor: COLORS.primary,
-    paddingVertical: 12,
-    borderRadius: 50,
+    backgroundColor: '#fff',
     elevation: 3,
-    alignItems: 'center', // Tengahin teks
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
   },
-  secondaryBtn: {
-    backgroundColor: COLORS.secondary, // Warna pembeda untuk tombol Quiz
+  cardLearn: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
-  ctaButtonText: {
-    color: COLORS.white,
-    fontSize: 14, // Sedikit diperkecil agar muat
+  cardQuiz: {
+    backgroundColor: COLORS.secondary,
+  },
+  cardIconBox: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#E3F6F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+  },
+  iconBoxQuiz: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  cardContent: {
+    flex: 1,
+  },
+  cardTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
+    color: COLORS.secondary,
+    marginBottom: 2,
   },
-  
-  heroImage: {
-    width: '100%',
-    height: 250, 
-    borderRadius: 15,
+  cardDesc: {
+    fontSize: 13,
+    color: '#888',
+  },
+  textWhite: {
+    color: '#fff',
+  },
+  textWhiteDesc: {
+    color: 'rgba(255,255,255,0.8)',
   },
 });
