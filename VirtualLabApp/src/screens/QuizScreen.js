@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ActivityIndicator,
   Alert, ScrollView, Image, Dimensions
@@ -11,7 +11,13 @@ import DraggableFlatList, {
   RenderItemParams,
   ScaleDecorator,
 } from "react-native-draggable-flatlist";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { GestureHandlerRootView, GestureDetector, Gesture } from "react-native-gesture-handler";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  runOnJS,
+} from 'react-native-reanimated';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 
 const TOPIC_NAMES = {
@@ -43,27 +49,95 @@ const getScoreMessage = (score) => {
 };
 
 const getScoreColor = (score) => {
-  if (score < 40) return '#E74C3C'; 
-  if (score < 60) return '#F39C12'; 
-  if (score < 80) return '#F1C40F'; 
-  return '#27AE60'; 
+  if (score < 40) return '#E74C3C';
+  if (score < 60) return '#F39C12';
+  if (score < 80) return '#F1C40F';
+  return '#27AE60';
+};
+
+// Sub-Component: Draggable Option for Questions 1-4
+const DraggableOption = ({ item, onDrop, dropZoneLayout }) => {
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const isDragging = useSharedValue(false);
+
+  const panGesture = Gesture.Pan()
+    .onStart(() => {
+      isDragging.value = true;
+    })
+    .onUpdate((event) => {
+      translateX.value = event.translationX;
+      translateY.value = event.translationY;
+    })
+    .onEnd((event) => {
+      isDragging.value = false;
+
+      // Deteksi jika dilepas di dalam area Drop Zone
+      if (
+        dropZoneLayout &&
+        event.absoluteX >= dropZoneLayout.pageX &&
+        event.absoluteX <= dropZoneLayout.pageX + dropZoneLayout.width &&
+        event.absoluteY >= dropZoneLayout.pageY &&
+        event.absoluteY <= dropZoneLayout.pageY + dropZoneLayout.height
+      ) {
+        runOnJS(onDrop)(item);
+      }
+
+      translateX.value = withSpring(0);
+      translateY.value = withSpring(0);
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+      { scale: withSpring(isDragging.value ? 1.1 : 1) }
+    ],
+    zIndex: isDragging.value ? 100 : 1,
+    elevation: isDragging.value ? 5 : 0,
+  }));
+
+  return (
+    <GestureDetector gesture={panGesture}>
+      <Animated.View style={[styles.availableOptionItem, animatedStyle]}>
+        <View style={styles.orderItemContent}>
+          <Ionicons name="apps-outline" size={20} color="#fff" style={{ marginRight: 10 }} />
+          <Text style={styles.availableOptionText}>{item}</Text>
+        </View>
+      </Animated.View>
+    </GestureDetector>
+  );
 };
 
 export default function QuizScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [quizData, setQuizData] = useState({});
   const [availableTopics, setAvailableTopics] = useState([]);
-  
+
   const [currentTopicId, setCurrentTopicId] = useState(null);
   const [currentQuestions, setCurrentQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState({}); 
+  const [answers, setAnswers] = useState({});
   const [quizFinished, setQuizFinished] = useState(false);
   const [scoreResult, setScoreResult] = useState(null);
+
+  // Ref & State untuk menangkap lokasi Drop Zone
+  const dropZoneRef = useRef(null);
+  const [dropZoneLayout, setDropZoneLayout] = useState(null);
 
   useEffect(() => {
     fetchQuizData();
   }, []);
+
+  // Sync ordering data when question changes
+  useEffect(() => {
+    if (currentTopicId) {
+      const q = currentQuestions[currentIndex];
+      if (q && q.type === 'ordering' && !answers[currentIndex]) {
+        setAnswers(prev => ({...prev, [currentIndex]: q.options}));
+      }
+    }
+  }, [currentIndex, currentTopicId]);
 
   async function fetchQuizData() {
     try {
@@ -98,12 +172,16 @@ export default function QuizScreen({ navigation }) {
     setScoreResult(null);
   };
 
-  const handleSelectAnswer = (questionId, answer) => {
-    setAnswers(prev => ({ ...prev, [currentIndex]: answer }));
+  const handleDragAnswer = (item) => {
+    setAnswers(prev => ({ ...prev, [currentIndex]: item }));
   };
 
-  const handleOrdering = (data) => {
-    setAnswers(prev => ({ ...prev, [currentIndex]: data }));
+  const measureDropZone = () => {
+    if (dropZoneRef.current) {
+      dropZoneRef.current.measure((x, y, width, height, pageX, pageY) => {
+        setDropZoneLayout({ x, y, width, height, pageX, pageY });
+      });
+    }
   };
 
   const handlePrevious = () => {
@@ -113,14 +191,7 @@ export default function QuizScreen({ navigation }) {
   };
 
   const handleNext = async () => {
-    const currentQ = currentQuestions[currentIndex];
-    const userAns = answers[currentIndex];
-
-    if (!userAns || (currentQ.type === 'ordering' && userAns.length !== currentQ.options.length)) {
-      Alert.alert("Tunggu!", "Silakan lengkapi jawaban sebelum melanjutkan.");
-      return;
-    }
-
+    // User can proceed without answering
     if (currentIndex < currentQuestions.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
@@ -240,32 +311,7 @@ export default function QuizScreen({ navigation }) {
 
   if (currentTopicId) {
     const q = currentQuestions[currentIndex];
-    if (q.type === 'ordering' && !answers[currentIndex]) {
-      setAnswers(prev => ({...prev, [currentIndex]: q.options}));
-    }
-
-    const renderItem = ({ item, drag, isActive }) => {
-      return (
-        <ScaleDecorator>
-          <TouchableOpacity
-            onLongPress={drag}
-            disabled={isActive}
-            style={[
-              styles.orderItem,
-              { 
-                backgroundColor: isActive ? '#E3F6F5' : '#fff',
-                elevation: isActive ? 4 : 2,
-              }
-            ]}
-          >
-            <View style={styles.orderItemContent}>
-              <Ionicons name="reorder-three-outline" size={24} color="#999" style={{marginRight: 10}} />
-              <Text style={styles.orderText}>{item}</Text>
-            </View>
-          </TouchableOpacity>
-        </ScaleDecorator>
-      );
-    };
+    const selectedAnswer = answers[currentIndex];
 
     return (
       <GestureHandlerRootView style={{ flex: 1 }}>
@@ -275,46 +321,57 @@ export default function QuizScreen({ navigation }) {
               Question {currentIndex + 1} of {currentQuestions.length}
             </Text>
 
-            <View style={[styles.questionCard, q.type === 'ordering' && { flex: 1 }]}>
+            <View style={[styles.questionCard, { flex: 1 }]}>
               <Text style={styles.questionText}>{q.question}</Text>
 
               {q.type === 'ordering' ? (
-                <View style={{ flex: 1 }}>
-                  <DraggableFlatList
-                    data={answers[currentIndex] || []}
-                    onDragEnd={({ data }) => handleOrdering(data)}
-                    keyExtractor={(item) => item}
-                    renderItem={renderItem}
-                  />
-                </View>
+                <DraggableFlatList
+                  data={answers[currentIndex] || []}
+                  onDragEnd={({ data }) => setAnswers(prev => ({...prev, [currentIndex]: data}))}
+                  keyExtractor={(item) => item}
+                  renderItem={({ item, drag, isActive }) => (
+                    <ScaleDecorator>
+                      <TouchableOpacity onLongPress={drag} style={[styles.orderItem, { backgroundColor: isActive ? '#E3F6F5' : '#fff' }]}>
+                        <Ionicons name="reorder-three" size={24} color="#999" style={{marginRight: 10}} />
+                        <Text style={styles.orderText}>{item}</Text>
+                      </TouchableOpacity>
+                    </ScaleDecorator>
+                  )}
+                />
               ) : (
-                <ScrollView
-                  style={styles.optionsScrollContainer}
-                  contentContainerStyle={styles.optionsContainer}
-                  showsVerticalScrollIndicator={false}
-                  nestedScrollEnabled={true}
-                >
-                  {q.options.map((opt, i) => (
-                    <TouchableOpacity
-                      key={i}
-                      style={[
-                        styles.optionButton,
-                        answers[currentIndex] === opt && styles.optionSelected,
-                      ]}
-                      onPress={() => handleSelectAnswer(q.id, opt)}
-                    >
-                      <Text
-                        style={[
-                          styles.optionText,
-                          answers[currentIndex] === opt &&
-                            styles.optionTextSelected,
-                        ]}
-                      >
-                        {opt}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.dropZoneTitle}>Drop your answer here:</Text>
+                  <View
+                    ref={dropZoneRef}
+                    onLayout={measureDropZone}
+                    style={styles.dropZone}
+                  >
+                    {selectedAnswer ? (
+                      <TouchableOpacity onPress={() => handleDragAnswer(null)} style={styles.droppedItem}>
+                        <Text style={styles.droppedItemText}>{selectedAnswer}</Text>
+                        <Ionicons name="close-circle" size={24} color="#E74C3C" />
+                      </TouchableOpacity>
+                    ) : (
+                      <View style={styles.emptyDropZone}>
+                        <Text style={styles.dropZonePlaceholder}>Drag one option here</Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <View style={{ flex: 1, marginTop: 20 }}>
+                    <Text style={styles.availableOptionsTitle}>Available options (Drag to box):</Text>
+                    <ScrollView showsVerticalScrollIndicator={false}>
+                      {q.options.filter(opt => opt !== selectedAnswer).map((item) => (
+                        <DraggableOption
+                          key={item}
+                          item={item}
+                          onDrop={handleDragAnswer}
+                          dropZoneLayout={dropZoneLayout}
+                        />
+                      ))}
+                    </ScrollView>
+                  </View>
+                </View>
               )}
             </View>
 
@@ -504,7 +561,7 @@ const styles = StyleSheet.create({
     textAlign: 'center'
   },
   optionsScrollContainer: {
-    maxHeight: 400,
+    maxHeight: 300,
   },
   optionsContainer: {
     gap: 10,
@@ -707,5 +764,108 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 14,
     color: '#888',
+  },
+  // Drag and Drop Styles
+  dragDropContainer: {
+    // Don't use flex: 1 to avoid layout issues
+  },
+  dropZoneWrapper: {
+    marginBottom: 10,
+  },
+  dropZoneTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLORS.secondary,
+    marginBottom: 10,
+  },
+  dropZone: {
+    minHeight: 80,
+    backgroundColor: '#F0F8FF',
+    borderRadius: 12,
+    padding: 10,
+    borderWidth: 2,
+    borderColor: '#4A90E2',
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+  },
+  emptyDropZone: {
+    alignItems: 'center',
+  },
+  dropZonePlaceholder: {
+    fontSize: 14,
+    color: '#999',
+    fontStyle: 'italic',
+  },
+  droppedItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E3F6F5',
+    padding: 12,
+    borderRadius: 10,
+    justifyContent: 'space-between',
+  },
+  droppedItemText: {
+    fontSize: 15,
+    color: '#2C698D',
+    fontWeight: '600',
+  },
+  removeButton: {
+    marginLeft: 10,
+  },
+  availableOptionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2C698D',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 8,
+  },
+  availableOptionText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  orderItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    marginBottom: 8,
+    elevation: 2,
+  },
+  orderText: {
+    fontWeight: '600',
+    color: '#2C698D',
+  },
+  dragOptionButton: {
+    borderRadius: 10,
+    backgroundColor: '#2C698D',
+    borderWidth: 1,
+    borderColor: '#2C698D',
+    marginBottom: 10,
+  },
+  dragOptionTouchable: {
+    padding: 15,
+    width: '100%',
+  },
+  dragOptionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dragOptionDisabled: {
+    backgroundColor: '#E0E0E0',
+    borderColor: '#E0E0E0',
+    opacity: 0.5,
+  },
+  dragOptionText: {
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: '600',
+    textAlign: 'center',
+    flex: 1,
+  },
+  dragOptionTextDisabled: {
+    color: '#999',
   },
 });
