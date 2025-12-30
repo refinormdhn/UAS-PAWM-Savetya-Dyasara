@@ -56,12 +56,15 @@ const getScoreColor = (score) => {
 };
 
 // Sub-Component: Draggable Option for Questions 1-4
+// Sub-Component: Draggable Option for Questions 1-4
 const DraggableOption = ({ item, onDrop, dropZoneLayout }) => {
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const isDragging = useSharedValue(false);
 
   const panGesture = Gesture.Pan()
+    // Tambahkan activateAfterLongPress jika drag sering bentrok dengan scroll
+    // .activateAfterLongPress(100) 
     .onStart(() => {
       isDragging.value = true;
     })
@@ -72,7 +75,7 @@ const DraggableOption = ({ item, onDrop, dropZoneLayout }) => {
     .onEnd((event) => {
       isDragging.value = false;
 
-      // Deteksi jika dilepas di dalam area Drop Zone
+      // Deteksi Drop Zone
       if (
         dropZoneLayout &&
         event.absoluteX >= dropZoneLayout.pageX &&
@@ -87,25 +90,35 @@ const DraggableOption = ({ item, onDrop, dropZoneLayout }) => {
       translateY.value = withSpring(0);
     });
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: translateX.value },
-      { translateY: translateY.value },
-      { scale: withSpring(isDragging.value ? 1.1 : 1) }
-    ],
-    zIndex: isDragging.value ? 100 : 1,
-    elevation: isDragging.value ? 5 : 0,
-  }));
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { translateX: translateX.value },
+        { translateY: translateY.value },
+        // Perbesar sedikit saat di-drag agar terlihat jelas
+        { scale: withSpring(isDragging.value ? 1.05 : 1) },
+      ],
+      // PENTING: Ubah zIndex secara dinamis
+      zIndex: isDragging.value ? 9999 : 1,
+      // PENTING: Elevation untuk Android
+      elevation: isDragging.value ? 10 : 0,
+      // Opsional: Ubah opacity agar terlihat sedang "melayang"
+      opacity: isDragging.value ? 0.9 : 1,
+    };
+  });
 
   return (
-    <GestureDetector gesture={panGesture}>
-      <Animated.View style={[styles.availableOptionItem, animatedStyle]}>
-        <View style={styles.orderItemContent}>
-          <Ionicons name="apps-outline" size={20} color="#fff" style={{ marginRight: 10 }} />
-          <Text style={styles.availableOptionText}>{item}</Text>
-        </View>
-      </Animated.View>
-    </GestureDetector>
+    // Bungkus dengan View statis untuk menjaga layout tetap rapi saat child-nya bergerak
+    <View style={{ zIndex: 1 }}> 
+      <GestureDetector gesture={panGesture}>
+        <Animated.View style={[styles.availableOptionItem, animatedStyle]}>
+          <View style={styles.orderItemContent}>
+            <Ionicons name="apps-outline" size={20} color="#fff" style={{ marginRight: 10 }} />
+            <Text style={styles.availableOptionText}>{item}</Text>
+          </View>
+        </Animated.View>
+      </GestureDetector>
+    </View>
   );
 };
 
@@ -358,9 +371,9 @@ export default function QuizScreen({ navigation }) {
                     )}
                   </View>
 
-                  <View style={{ flex: 1, marginTop: 20 }}>
+                  <View style={{ flex: 1, marginTop: 20, zIndex: 9999, elevation: 10 }}>
                     <Text style={styles.availableOptionsTitle}>Select one of these options:</Text>
-                    <ScrollView showsVerticalScrollIndicator={false}>
+                    <ScrollView showsVerticalScrollIndicator={false} style={{ overflow: 'visible' }} contentContainerStyle={{ paddingBottom: 50 }}>
                       {q.options.filter(opt => opt !== selectedAnswer).map((item) => (
                         <DraggableOption
                           key={item}
