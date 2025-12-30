@@ -22,7 +22,7 @@ const materialsData = [
     id: 1,
     title: "Engaging Your Audience & Drafting Openers",
     category: "Foundation",
-    image: require('../../assets/images/home.png'), 
+    image: require('../../assets/images/audience_engagement.jpg'), 
     description: "Learn how to hook your audience from the very first second.",
     // Link Video (Array)
     videoUrls: ["https://www.youtube.com/embed/oTe4f-bBEKg"], 
@@ -32,7 +32,7 @@ const materialsData = [
     id: 2,
     title: "Delivery Techniques",
     category: "Delivery",
-    image: require('../../assets/images/home.png'),
+    image: require('../../assets/images/presentation_delivery.jpg'),
     description: "Mastering voice, tone, and pacing for impactful speech.",
     videoUrls: ["https://www.youtube.com/embed/NiKtZgImdlY"],
     pdfUrl: "https://zvkelfhmrjfvveembihp.supabase.co/storage/v1/object/public/materi/Delivery-Techniques--Drafting-Conclusion-and-Writing-a-Process.pdf", 
@@ -41,12 +41,12 @@ const materialsData = [
     id: 3,
     title: "Visual Aids & Drafting Body",
     category: "Visuals",
-    image: require('../../assets/images/home.png'),
+    image: require('../../assets/images/visual_aids.jpg'),
     description: "How to create slides that support, not distract.",
     // 👇 MATERI 3: Punya 2 Video Sekaligus
     videoUrls: [
-      "https://www.youtube.com/embed/V8eLdbKXGzk", // Video 1
-      "https://www.youtube.com/embed/Y1qDNTG9lg0"  // Video 2
+      "https://www.youtube.com/embed/V8eLdbKXGzk", 
+      "https://www.youtube.com/embed/Y1qDNTG9lg0"
     ],
     pdfUrl: "https://zvkelfhmrjfvveembihp.supabase.co/storage/v1/object/public/materi/Visual-Aids-and-Drafting-Body-of-Presentation.pdf",
   },
@@ -54,7 +54,7 @@ const materialsData = [
     id: 4,
     title: "Handling Questions",
     category: "Q&A",
-    image: require('../../assets/images/home.png'),
+    image: require('../../assets/images/handling_questions.jpg'),
     description: "Strategies to handle tough questions with confidence.",
     // 👇 MATERI 4: Tidak ada video
     videoUrls: [], 
