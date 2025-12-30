@@ -94,15 +94,13 @@ const styles = StyleSheet.create({
   headerContainer: {
     marginBottom: 20,
     overflow: 'hidden',
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
     elevation: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 5,
     backgroundColor: '#fff',
-    height: 300, // Sedikit lebih tinggi agar lega
+    height: 250,
   },
   heroBackground: {
     width: '100%',

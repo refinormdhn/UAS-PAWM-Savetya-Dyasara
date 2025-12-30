@@ -67,10 +67,13 @@ export default function LearnScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [playingVideoId, setPlayingVideoId] = useState(null);
 
+  // 1. Filter Kartu (Mana kartu yang boleh muncul)
   const filteredMaterials = materialsData.filter(item => {
     let matchType = true;
+    // Jika filter Video, pastikan punya video. Jika PDF, pastikan punya PDF.
     if (filter === 'Video') matchType = item.videoUrls.length > 0;
-    if (filter === 'PDF') matchType = !!item.pdfUrl;
+    if (filter === 'Document') matchType = !!item.pdfUrl;
+    
     const matchSearch = item.title.toLowerCase().includes(search.toLowerCase());
     return matchType && matchSearch;
   });
@@ -99,7 +102,6 @@ export default function LearnScreen() {
     <View>
       <View style={styles.introSection}>
         <ImageBackground
-          // Pastikan file learning-center.jpg ada di folder assets/images/
           source={require('../../assets/images/learning-center.jpg')} 
           style={styles.introImage}
           resizeMode="cover"
@@ -115,17 +117,21 @@ export default function LearnScreen() {
       </View>
 
       <View style={styles.searchContainer}>
+        {/* Ikon Kaca Pembesar */}
         <Ionicons name="search" size={20} color="#6d6a6aff" style={{marginRight: 10}} />
+        
+        {/* Placeholder Text Color disesuaikan */}
         <TextInput 
           style={styles.searchInput}
           placeholder="Search topics..."
+          placeholderTextColor="#6d6a6aff" 
           value={search}
           onChangeText={setSearch}
         />
       </View>
 
       <View style={styles.filterContainer}>
-        {['All', 'Video', 'PDF'].map((type) => (
+        {['All', 'Video', 'Document'].map((type) => (
           <TouchableOpacity 
             key={type}
             style={[styles.filterChip, filter === type && styles.activeChip]}
@@ -140,45 +146,56 @@ export default function LearnScreen() {
     </View>
   );
 
-  const renderItem = ({ item }) => (
-    <View style={styles.card}>
-      <Image source={item.image} style={styles.cardImage} resizeMode="cover" />
-      
-      <View style={styles.cardContent}>
-        <View style={styles.badgeContainer}>
-          <Text style={styles.categoryBadge}>{item.category}</Text>
-        </View>
+  const renderItem = ({ item }) => {
+    // 2. Filter Tombol (Mana tombol yang boleh muncul di dalam kartu)
+    // - Tampilkan Video JIKA (Filter All ATAU Filter Video) DAN url videonya ada
+    const showVideo = (filter === 'All' || filter === 'Video') && item.videoUrls.length > 0;
+    
+    // - Tampilkan PDF JIKA (Filter All ATAU Filter PDF) DAN url pdfnya ada
+    const showPdf = (filter === 'All' || filter === 'Document') && item.pdfUrl;
 
-        <Text style={styles.cardTitle}>{item.title}</Text>
-        <Text style={styles.cardDesc} numberOfLines={2}>{item.description}</Text>
+    return (
+      <View style={styles.card}>
+        <Image source={item.image} style={styles.cardImage} resizeMode="cover" />
+        
+        <View style={styles.cardContent}>
+          <View style={styles.badgeContainer}>
+            <Text style={styles.categoryBadge}>{item.category}</Text>
+          </View>
 
-        <View style={styles.actionRow}>
-          {item.videoUrls.map((url, index) => (
-            <TouchableOpacity 
-              key={index}
-              style={[styles.actionButton, styles.btnVideo]}
-              onPress={() => handleWatchVideo(url)}
-            >
-              <Ionicons name="play-circle" size={18} color="white" style={{marginRight:5}} />
-              <Text style={styles.btnText}>
-                {item.videoUrls.length > 1 ? `Watch Part ${index + 1}` : 'Watch'}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          <Text style={styles.cardTitle}>{item.title}</Text>
+          <Text style={styles.cardDesc} numberOfLines={2}>{item.description}</Text>
 
-          {item.pdfUrl && (
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.btnPdf]}
-              onPress={() => handleOpenPdf(item.pdfUrl)}
-            >
-              <Ionicons name="document-text" size={18} color="white" style={{marginRight:5}} />
-              <Text style={styles.btnText}>Read PDF</Text>
-            </TouchableOpacity>
-          )}
+          <View style={styles.actionRow}>
+            {/* Render Tombol Video (Hanya jika showVideo true) */}
+            {showVideo && item.videoUrls.map((url, index) => (
+              <TouchableOpacity 
+                key={index}
+                style={[styles.actionButton, styles.btnVideo]}
+                onPress={() => handleWatchVideo(url)}
+              >
+                <Ionicons name="play-circle" size={18} color="white" style={{marginRight:5}} />
+                <Text style={styles.btnText}>
+                  {item.videoUrls.length > 1 ? `Watch Part ${index + 1}` : 'Watch'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+
+            {/* Render Tombol PDF (Hanya jika showPdf true) */}
+            {showPdf && (
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.btnPdf]}
+                onPress={() => handleOpenPdf(item.pdfUrl)}
+              >
+                <Ionicons name="document-text" size={18} color="white" style={{marginRight:5}} />
+                <Text style={styles.btnText}>Read PDF</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
@@ -226,12 +243,9 @@ const styles = StyleSheet.create({
   introSection: {
     height: 250,
     marginBottom: 20,
-    // Jika ingin rounded bottom seperti Home/Quiz:
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
     overflow: 'hidden',
     position: 'relative',
-    backgroundColor: '#fff', // Fallback color
+    backgroundColor: '#fff', 
     elevation: 5,
   },
   introImage: {
@@ -244,7 +258,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    // Warna Biru Transparan Khas
     backgroundColor: 'rgba(44, 105, 141, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -283,7 +296,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: '#eee',
     elevation: 2,
   },
-  searchInput: { flex: 1 },
+  searchInput: { flex: 1, color: '#333' }, // Pastikan input text juga gelap
   filterContainer: { flexDirection: 'row', paddingHorizontal: 20, marginVertical: 20 },
   filterChip: {
     paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20,
@@ -294,10 +307,10 @@ const styles = StyleSheet.create({
   activeFilterText: { color: '#fff' },
 
   // === CARD & LIST ===
-  listContent: { paddingBottom: 40 }, // Hapus padding horizontal di container utama agar Header full width
+  listContent: { paddingBottom: 40 }, 
   card: {
     backgroundColor: COLORS.white, borderRadius: 12, marginBottom: 20,
-    marginHorizontal: 20, // Tambahkan margin horizontal di sini (karena listContent full width)
+    marginHorizontal: 20, 
     overflow: 'hidden', elevation: 3, shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4,
   },
