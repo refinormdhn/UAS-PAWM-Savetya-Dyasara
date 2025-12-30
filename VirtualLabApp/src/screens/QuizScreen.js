@@ -340,7 +340,7 @@ export default function QuizScreen({ navigation }) {
                 />
               ) : (
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.dropZoneTitle}>Drop your answer here:</Text>
+                  <Text style={styles.dropZoneTitle}>Drag your answer and Drop them here: </Text>
                   <View
                     ref={dropZoneRef}
                     onLayout={measureDropZone}
@@ -359,7 +359,7 @@ export default function QuizScreen({ navigation }) {
                   </View>
 
                   <View style={{ flex: 1, marginTop: 20 }}>
-                    <Text style={styles.availableOptionsTitle}>Available options (Drag to box):</Text>
+                    <Text style={styles.availableOptionsTitle}>Select one of these options:</Text>
                     <ScrollView showsVerticalScrollIndicator={false}>
                       {q.options.filter(opt => opt !== selectedAnswer).map((item) => (
                         <DraggableOption
