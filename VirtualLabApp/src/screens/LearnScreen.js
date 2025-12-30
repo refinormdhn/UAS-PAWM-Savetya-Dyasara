@@ -188,7 +188,7 @@ export default function LearnScreen() {
                 onPress={() => handleOpenPdf(item.pdfUrl)}
               >
                 <Ionicons name="document-text" size={18} color="white" style={{marginRight:5}} />
-                <Text style={styles.btnText}>Read PDF</Text>
+                <Text style={styles.btnText}>Read Document</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -232,7 +232,7 @@ export default function LearnScreen() {
         keyExtractor={item => item.id.toString()}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        ListHeaderComponent={renderHeader}
+        ListHeaderComponent={renderHeader()}
       />
     </SafeAreaView>
   );
