@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   heroOverlay: {
     flex: 1,
     // 👇 INI KUNCINYA: Overlay Biru Transparan
-    backgroundColor: 'rgba(20, 60, 120, 0.85)', 
+    backgroundColor: 'rgba(44, 105, 141, 0.85)', 
     justifyContent: 'center', // Teks ke tengah vertikal
     alignItems: 'center',     // Teks ke tengah horizontal
     padding: 30,
