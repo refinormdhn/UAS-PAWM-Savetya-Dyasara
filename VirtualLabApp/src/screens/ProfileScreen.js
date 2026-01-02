@@ -84,7 +84,6 @@ export default function ProfileScreen() {
           questionTopicMap[q.id] = q.topic;
         });
 
-        // Group answers by session (berdasarkan question_id yang berurutan)
         const sessions = [];
         let currentSession = [];
         let lastQuestionId = null;
@@ -93,7 +92,6 @@ export default function ProfileScreen() {
           const currentQuestionId = answer.question_id;
           const currentTopic = questionTopicMap[currentQuestionId];
 
-          // Jika question_id tidak berurutan atau topic berbeda, anggap session baru
           if (lastQuestionId !== null &&
               (currentQuestionId <= lastQuestionId ||
                questionTopicMap[lastQuestionId] !== currentTopic)) {
@@ -106,7 +104,6 @@ export default function ProfileScreen() {
           currentSession.push(answer);
           lastQuestionId = currentQuestionId;
 
-          // Session terakhir
           if (index === userAnswers.length - 1 && currentSession.length > 0) {
             sessions.push(currentSession);
           }
@@ -115,7 +112,6 @@ export default function ProfileScreen() {
         console.log('Total Quiz Sessions:', sessions.length);
         setTotalAttempts(sessions.length);
 
-        // Get most recent quiz (session terakhir)
         if (sessions.length > 0) {
           const lastSession = sessions[sessions.length - 1];
           const lastQuestionId = lastSession[0].question_id;
@@ -170,12 +166,10 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
 
-        {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>My Profile</Text>
         </View>
 
-        {/* Profile Card */}
         <View style={styles.profileCard}>
           <View style={styles.avatarContainer}>
             <Image

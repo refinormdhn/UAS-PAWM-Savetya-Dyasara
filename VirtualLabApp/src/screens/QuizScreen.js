@@ -55,16 +55,12 @@ const getScoreColor = (score) => {
   return '#27AE60';
 };
 
-// Sub-Component: Draggable Option for Questions 1-4
-// Sub-Component: Draggable Option for Questions 1-4
 const DraggableOption = ({ item, onDrop, dropZoneLayout }) => {
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const isDragging = useSharedValue(false);
 
   const panGesture = Gesture.Pan()
-    // Tambahkan activateAfterLongPress jika drag sering bentrok dengan scroll
-    // .activateAfterLongPress(100) 
     .onStart(() => {
       isDragging.value = true;
     })
@@ -75,7 +71,6 @@ const DraggableOption = ({ item, onDrop, dropZoneLayout }) => {
     .onEnd((event) => {
       isDragging.value = false;
 
-      // Deteksi Drop Zone
       if (
         dropZoneLayout &&
         event.absoluteX >= dropZoneLayout.pageX &&
@@ -95,20 +90,15 @@ const DraggableOption = ({ item, onDrop, dropZoneLayout }) => {
       transform: [
         { translateX: translateX.value },
         { translateY: translateY.value },
-        // Perbesar sedikit saat di-drag agar terlihat jelas
         { scale: withSpring(isDragging.value ? 1.05 : 1) },
       ],
-      // PENTING: Ubah zIndex secara dinamis
       zIndex: isDragging.value ? 9999 : 1,
-      // PENTING: Elevation untuk Android
       elevation: isDragging.value ? 10 : 0,
-      // Opsional: Ubah opacity agar terlihat sedang "melayang"
       opacity: isDragging.value ? 0.9 : 1,
     };
   });
 
   return (
-    // Bungkus dengan View statis untuk menjaga layout tetap rapi saat child-nya bergerak
     <View style={{ zIndex: 1 }}> 
       <GestureDetector gesture={panGesture}>
         <Animated.View style={[styles.availableOptionItem, animatedStyle]}>
@@ -134,7 +124,6 @@ export default function QuizScreen({ navigation }) {
   const [quizFinished, setQuizFinished] = useState(false);
   const [scoreResult, setScoreResult] = useState(null);
 
-  // Ref & State untuk menangkap lokasi Drop Zone
   const dropZoneRef = useRef(null);
   const [dropZoneLayout, setDropZoneLayout] = useState(null);
 
@@ -142,7 +131,6 @@ export default function QuizScreen({ navigation }) {
     fetchQuizData();
   }, []);
 
-  // Sync ordering data when question changes
   useEffect(() => {
     if (currentTopicId) {
       const q = currentQuestions[currentIndex];
@@ -204,7 +192,6 @@ export default function QuizScreen({ navigation }) {
   };
 
   const handleNext = async () => {
-    // User can proceed without answering
     if (currentIndex < currentQuestions.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
@@ -779,9 +766,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#888',
   },
-  // Drag and Drop Styles
   dragDropContainer: {
-    // Don't use flex: 1 to avoid layout issues
   },
   dropZoneWrapper: {
     marginBottom: 10,
