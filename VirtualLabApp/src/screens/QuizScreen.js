@@ -236,6 +236,7 @@ export default function QuizScreen({ navigation }) {
         dbAnswers.push({
           user_id: user.id,
           question_id: q.id,
+          user_answer: userAns ? (typeof userAns === 'object' ? JSON.stringify(userAns) : userAns) : null,
           is_correct: isCorrect
         });
       }

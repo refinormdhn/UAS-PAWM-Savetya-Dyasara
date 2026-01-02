@@ -40,7 +40,8 @@ export default function ProfileScreen() {
         const { data: userAnswers, error: answersError } = await supabase
           .from('user_answers')
           .select('*')
-          .eq('user_id', currentUser.id);
+          .eq('user_id', currentUser.id)
+          .order('id', { ascending: true });
 
         console.log('Answers Error:', answersError);
         console.log('Total User Answers:', userAnswers?.length);
@@ -83,34 +84,52 @@ export default function ProfileScreen() {
           questionTopicMap[q.id] = q.topic;
         });
 
-        const topicGroups = {};
-        userAnswers.forEach(answer => {
-          const topic = questionTopicMap[answer.question_id];
-          if (topic) {
-            if (!topicGroups[topic]) {
-              topicGroups[topic] = [];
+        // Group answers by session (berdasarkan question_id yang berurutan)
+        const sessions = [];
+        let currentSession = [];
+        let lastQuestionId = null;
+
+        userAnswers.forEach((answer, index) => {
+          const currentQuestionId = answer.question_id;
+          const currentTopic = questionTopicMap[currentQuestionId];
+
+          // Jika question_id tidak berurutan atau topic berbeda, anggap session baru
+          if (lastQuestionId !== null &&
+              (currentQuestionId <= lastQuestionId ||
+               questionTopicMap[lastQuestionId] !== currentTopic)) {
+            if (currentSession.length > 0) {
+              sessions.push([...currentSession]);
+              currentSession = [];
             }
-            topicGroups[topic].push(answer);
+          }
+
+          currentSession.push(answer);
+          lastQuestionId = currentQuestionId;
+
+          // Session terakhir
+          if (index === userAnswers.length - 1 && currentSession.length > 0) {
+            sessions.push(currentSession);
           }
         });
 
-        console.log('Topic Groups:', Object.keys(topicGroups));
-        setTotalAttempts(Object.keys(topicGroups).length);
-        console.log('Total Attempts (unique topics):', Object.keys(topicGroups).length);
-        const lastAnswer = userAnswers[userAnswers.length - 1];
-        const lastTopic = questionTopicMap[lastAnswer.question_id];
+        console.log('Total Quiz Sessions:', sessions.length);
+        setTotalAttempts(sessions.length);
 
-        if (lastTopic && topicGroups[lastTopic]) {
-          const topicAnswers = topicGroups[lastTopic];
-          const correctCount = topicAnswers.filter(a => a.is_correct).length;
-          const totalQuestions = topicAnswers.length;
+        // Get most recent quiz (session terakhir)
+        if (sessions.length > 0) {
+          const lastSession = sessions[sessions.length - 1];
+          const lastQuestionId = lastSession[0].question_id;
+          const lastTopic = questionTopicMap[lastQuestionId];
+
+          const correctCount = lastSession.filter(a => a.is_correct).length;
+          const totalQuestions = lastSession.length;
           const score = Math.round((correctCount / totalQuestions) * 100);
 
           setRecentQuiz({
             topicName: TOPIC_NAMES[lastTopic] || `Topic ${lastTopic}`,
             score: score
           });
-          console.log('Most Recent Quiz:', { topic: lastTopic, score, totalQuestions });
+          console.log('Most Recent Quiz:', { topic: lastTopic, score, totalQuestions, session: lastSession.length });
         } else {
           setRecentQuiz(null);
         }
