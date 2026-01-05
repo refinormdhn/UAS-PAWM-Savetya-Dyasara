@@ -3,12 +3,11 @@ import {
   View, Text, TextInput, TouchableOpacity, 
   StyleSheet, Alert, Image, ActivityIndicator 
 } from 'react-native';
-import { supabase } from '../services/supabase'; // Sesuaikan path jika pakai src/lib
+import { supabase } from '../services/supabase';
 import { COLORS, SIZES } from '../config/theme';
-import * as WebBrowser from 'expo-web-browser'; // Browser in-app
-import { makeRedirectUri } from 'expo-auth-session'; // Helper URL
+import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
 
-// Wajib untuk menangani redirect browser
 WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen({ navigation }) {
@@ -16,7 +15,6 @@ export default function LoginScreen({ navigation }) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // === 1. LOGIN EMAIL BIASA ===
   async function handleLogin() {
     if (!email || !password) {
       Alert.alert('Error', 'Email dan Password harus diisi!');
@@ -38,9 +36,6 @@ export default function LoginScreen({ navigation }) {
       setLoading(true);
       console.log('🚀 Starting Google OAuth...');
 
-      // ⚠️ GANTI BAGIAN INI DENGAN URL DARI TERMINAL ANDA ⚠️
-      // Contoh: "exp://192.168.1.58:8081" (Tanpa /--/auth/callback)
-      // JANGAN PAKAI localhost. Pakai angka IP.
       const redirectUrl = "exp://192.168.1.58:8081"; 
 
       console.log('👉 URL Redirect Manual:', redirectUrl);
@@ -58,13 +53,11 @@ export default function LoginScreen({ navigation }) {
 
       console.log('🌐 Opening auth session...');
       
-      // Buka Browser
       const result = await WebBrowser.openAuthSessionAsync(
         data.url,
         redirectUrl 
       );
 
-      // Log hasil browser untuk debugging
       console.log('🔙 Result Browser:', result);
 
       if (result.type === 'success' && result.url) {
@@ -134,14 +127,12 @@ export default function LoginScreen({ navigation }) {
           )}
         </TouchableOpacity>
 
-        {/* PEMBATAS "OR" */}
         <View style={styles.dividerContainer}>
           <View style={styles.dividerLine} />
           <Text style={styles.dividerText}>OR</Text>
           <View style={styles.dividerLine} />
         </View>
 
-        {/* TOMBOL GOOGLE */}
         <TouchableOpacity 
           style={styles.googleButton} 
           onPress={handleGoogleLogin}
@@ -197,7 +188,6 @@ const styles = StyleSheet.create({
   },
   buttonText: { color: COLORS.white, fontSize: 16, fontWeight: 'bold' },
   
-  // Styles Tambahan untuk Google & Divider
   dividerContainer: {
     flexDirection: 'row', alignItems: 'center', marginVertical: 20
   },

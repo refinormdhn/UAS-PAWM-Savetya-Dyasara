@@ -8,7 +8,6 @@ import { COLORS } from '../config/theme';
 import { Ionicons } from '@expo/vector-icons'; 
 import YoutubePlayer from "react-native-youtube-iframe";
 
-// === HELPER: Ambil ID YouTube ===
 const getYoutubeId = (url) => {
   if (!url) return null;
   const regex = /(?:embed\/|v=|youtu\.be\/)([^&?]*)/;
@@ -16,7 +15,6 @@ const getYoutubeId = (url) => {
   return match ? match[1] : null;
 };
 
-// === DATA MATERI ===
 const materialsData = [
   {
     id: 1,
@@ -63,14 +61,11 @@ export default function LearnScreen() {
   const [filter, setFilter] = useState('All'); 
   const [search, setSearch] = useState('');
   
-  // State untuk Video Player
   const [modalVisible, setModalVisible] = useState(false);
   const [playingVideoId, setPlayingVideoId] = useState(null);
 
-  // 1. Filter Kartu (Mana kartu yang boleh muncul)
   const filteredMaterials = materialsData.filter(item => {
     let matchType = true;
-    // Jika filter Video, pastikan punya video. Jika PDF, pastikan punya PDF.
     if (filter === 'Video') matchType = item.videoUrls.length > 0;
     if (filter === 'Document') matchType = !!item.pdfUrl;
     
@@ -117,10 +112,8 @@ export default function LearnScreen() {
       </View>
 
       <View style={styles.searchContainer}>
-        {/* Ikon Kaca Pembesar */}
         <Ionicons name="search" size={20} color="#6d6a6aff" style={{marginRight: 10}} />
         
-        {/* Placeholder Text Color disesuaikan */}
         <TextInput 
           style={styles.searchInput}
           placeholder="Search topics..."
@@ -147,11 +140,8 @@ export default function LearnScreen() {
   );
 
   const renderItem = ({ item }) => {
-    // 2. Filter Tombol (Mana tombol yang boleh muncul di dalam kartu)
-    // - Tampilkan Video JIKA (Filter All ATAU Filter Video) DAN url videonya ada
     const showVideo = (filter === 'All' || filter === 'Video') && item.videoUrls.length > 0;
     
-    // - Tampilkan PDF JIKA (Filter All ATAU Filter PDF) DAN url pdfnya ada
     const showPdf = (filter === 'All' || filter === 'Document') && item.pdfUrl;
 
     return (
@@ -167,7 +157,6 @@ export default function LearnScreen() {
           <Text style={styles.cardDesc} numberOfLines={2}>{item.description}</Text>
 
           <View style={styles.actionRow}>
-            {/* Render Tombol Video (Hanya jika showVideo true) */}
             {showVideo && item.videoUrls.map((url, index) => (
               <TouchableOpacity 
                 key={index}
@@ -181,7 +170,6 @@ export default function LearnScreen() {
               </TouchableOpacity>
             ))}
 
-            {/* Render Tombol PDF (Hanya jika showPdf true) */}
             {showPdf && (
               <TouchableOpacity 
                 style={[styles.actionButton, styles.btnPdf]}
@@ -289,14 +277,13 @@ const styles = StyleSheet.create({
     textShadowRadius: 3,
   },
 
-  // === SEARCH & FILTER ===
   searchContainer: {
     flexDirection: 'row', backgroundColor: COLORS.white, marginHorizontal: 20,
     marginTop: 0, padding: 10, borderRadius: 8, alignItems: 'center',
     borderWidth: 1, borderColor: '#eee',
     elevation: 2,
   },
-  searchInput: { flex: 1, color: '#333' }, // Pastikan input text juga gelap
+  searchInput: { flex: 1, color: '#333' },
   filterContainer: { flexDirection: 'row', paddingHorizontal: 20, marginVertical: 20 },
   filterChip: {
     paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20,
@@ -306,7 +293,6 @@ const styles = StyleSheet.create({
   filterText: { color: '#666', fontWeight: '600' },
   activeFilterText: { color: '#fff' },
 
-  // === CARD & LIST ===
   listContent: { paddingBottom: 40 }, 
   card: {
     backgroundColor: COLORS.white, borderRadius: 12, marginBottom: 20,
@@ -334,7 +320,6 @@ const styles = StyleSheet.create({
   btnPdf: { backgroundColor: COLORS.primary },
   btnText: { color: 'white', fontWeight: 'bold', fontSize: 13 },
 
-  // === MODAL ===
   modalOverlay: {
     flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center'
   },

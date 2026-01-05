@@ -15,16 +15,13 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         
-        {/* === 1. HERO HEADER (Gaya Quiz Blue) === */}
         <View style={styles.headerContainer}>
           <ImageBackground
             source={require('../../assets/images/home.png')}
             style={styles.heroBackground}
             imageStyle={styles.heroImageStyle}
           >
-            {/* Overlay Biru Transparan */}
             <View style={styles.heroOverlay}>
-              {/* Teks Putih Bersih & Rata Tengah */}
               <Text style={styles.heroTitle}>
                 Elevate your voice, master the art of presentation
               </Text>
@@ -35,13 +32,11 @@ export default function HomeScreen() {
           </ImageBackground>
         </View>
 
-        {/* === 2. BODY CONTENT (Tombol Kartu) === */}
         <View style={styles.bodyContainer}>
           
           <Text style={styles.sectionTitle}>Let's Start!</Text>
           <Text style={styles.sectionSubtitle}>Choose your activity below</Text>
 
-          {/* TOMBOL 1: LEARNING */}
           <TouchableOpacity 
             style={[styles.actionCard, styles.cardLearn]}
             onPress={() => navigation.navigate('LearnTab')}
@@ -57,7 +52,6 @@ export default function HomeScreen() {
             <Ionicons name="chevron-forward" size={24} color="#ccc" />
           </TouchableOpacity>
 
-          {/* TOMBOL 2: QUIZ */}
           <TouchableOpacity 
             style={[styles.actionCard, styles.cardQuiz]}
             onPress={() => navigation.navigate('QuizTab')}
@@ -90,7 +84,6 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
 
-  // === HEADER STYLES (Updated to Blue Quiz Style) ===
   headerContainer: {
     marginBottom: 20,
     overflow: 'hidden',
@@ -108,28 +101,26 @@ const styles = StyleSheet.create({
   },
   heroOverlay: {
     flex: 1,
-    // 👇 INI KUNCINYA: Overlay Biru Transparan
     backgroundColor: 'rgba(44, 105, 141, 0.85)', 
-    justifyContent: 'center', // Teks ke tengah vertikal
-    alignItems: 'center',     // Teks ke tengah horizontal
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 30,
   },
   heroTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#ffffff', // Putih bersih
-    textAlign: 'center', // Rata tengah
+    color: '#ffffff',
+    textAlign: 'center',
     marginBottom: 15,
     lineHeight: 34,
   },
   heroSubtitle: {
     fontSize: 16,
-    color: 'rgba(255,255,255,0.9)', // Putih agak transparan dikit
-    textAlign: 'center', // Rata tengah
+    color: 'rgba(255,255,255,0.9)',
+    textAlign: 'center',
     lineHeight: 22,
   },
 
-  // === BODY STYLES ===
   bodyContainer: {
     paddingHorizontal: 20,
     marginTop: 10,
@@ -146,7 +137,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 
-  // === CARD STYLES ===
   actionCard: {
     flexDirection: 'row',
     alignItems: 'center',
