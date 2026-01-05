@@ -17,9 +17,7 @@
       "android": {
         "buildType": "apk"
       },
-      "ios": {
-        "buildType": "release"
-      }
+      "ios": {}
     }
   },
   "submit": {
